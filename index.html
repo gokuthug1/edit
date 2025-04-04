@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EditPad Pro</title>
+    <style>
+        :root {
+            /* Define CSS variables for easier theme management */
+            --bg-color-main: #1e1e1e;
+            --bg-color-editor: #252526;
+            --bg-color-ui: #2e2e2e; /* Color for UI elements like stats, settings */
+            --text-color-main: #d4d4d4;
+            --accent-color: #007acc;
+            --accent-color-hover: #005a9e;
+            --border-radius-main: 8px;
+            --border-radius-small: 5px;
+            --box-shadow-main: 0 4px 10px rgba(0, 0, 0, 0.5);
+            --box-shadow-modal: 0 6px 15px rgba(0, 0, 0, 0.7);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--bg-color-main);
+            color: var(--text-color-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        h1 {
+            color: var(--text-color-main);
+            margin-bottom: 15px;
+        }
+
+        .editor-container {
+            width: 85%;
+            max-width: 900px;
+            background: var(--bg-color-editor); /* Editor area background */
+            border-radius: var(--border-radius-main);
+            box-shadow: var(--box-shadow-main);
+            padding: 5px;
+            display: flex;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        textarea#editor {
+            width: 100%;
+            height: 50vh;
+            min-height: 300px;
+            border: none;
+            resize: vertical;
+            background: transparent; /* Make textarea transparent to show container bg */
+            color: var(--text-color-main); /* Default text color */
+            font-size: 16px; /* Default */
+            padding: 15px;
+            outline: none;
+            line-height: 1.5em; /* Default */
+            white-space: pre-wrap;
+            overflow-y: scroll;
+            overflow-x: auto; /* Allow horizontal scroll if needed */
+            font-family: 'Courier New', monospace; /* Default Monospace */
+            user-select: text;
+            box-sizing: border-box;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center; /* Align items vertically */
+            width: 85%;
+            max-width: 900px;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .controls .input-group { /* Group related inputs/buttons */
+            display: flex;
+            gap: 5px;
+            flex-grow: 1; /* Allow group to take space */
+            min-width: 200px; /* Prevent excessive shrinking */
+        }
+
+        .controls .save-group { /* Specific group for save controls */
+             display: flex;
+             gap: 5px;
+             align-items: center; /* Align input and button */
+        }
+
+        .controls .action-buttons { /* Group for standalone action buttons */
+             display: flex;
+             gap: 10px;
+        }
+
+
+        .controls input[type="text"] {
+            padding: 8px 10px;
+            border: 1px solid var(--bg-color-ui);
+            background-color: var(--bg-color-main);
+            color: var(--text-color-main);
+            border-radius: var(--border-radius-small);
+            font-size: 14px;
+            flex: 1; /* Allow inputs to grow within their group */
+        }
+
+         /* Specific width for filename input */
+        .controls input#saveFilename {
+             flex-grow: 0; /* Don't grow */
+             flex-shrink: 1; /* Allow shrinking */
+             width: 180px; /* Default width */
+             min-width: 120px; /* Minimum width */
+        }
+
+         .controls input[type="text"]:focus {
+             outline: none;
+             border-color: var(--accent-color);
+         }
+
+        .controls button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: var(--border-radius-small);
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--accent-color);
+            color: white;
+            transition: background-color 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .controls button:hover {
+            background: var(--accent-color-hover);
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            width: 85%;
+            max-width: 900px;
+            margin-top: 10px;
+            font-size: 14px;
+            padding: 8px 12px;
+            background: var(--bg-color-ui); /* Use UI background color */
+            border-radius: var(--border-radius-small);
+            color: #aaa;
+            transition: opacity 0.3s ease, height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+            flex-wrap: wrap; /* Allow stats to wrap on smaller screens if needed */
+            gap: 10px; /* Add gap between stats */
+        }
+
+         .stats-container.hidden {
+            opacity: 0;
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: none;
+            overflow: hidden;
+            margin-top: 0;
+         }
+         /* Ensure stats don't shrink too much */
+        .stats-container span {
+            white-space: nowrap;
+        }
+
+        /* --- Settings Modal --- */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .settings-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background: var(--bg-color-ui); /* Use consistent UI background */
+            padding: 25px 30px;
+            border-radius: var(--border-radius-main);
+            box-shadow: var(--box-shadow-modal);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            width: 90%;
+            max-width: 400px;
+            color: var(--text-color-main);
+        }
+
+        .settings-container.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .settings-container h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--text-color-main);
+        }
+
+        .settings-container label {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .settings-container input[type="checkbox"] {
+             margin-right: 8px;
+             accent-color: var(--accent-color);
+             width: 16px;
+             height: 16px;
+             flex-shrink: 0; /* Prevent checkbox shrinking */
+        }
+
+         .settings-container label span {
+            flex-grow: 1;
+            margin-right: 10px;
+            word-break: keep-all; /* Prevent label text wrapping awkwardly */
+         }
+
+        .settings-container input[type="color"] {
+            margin-left: 10px;
+            border: none;
+            background: none;
+            height: 25px;
+            width: 40px;
+            padding: 0;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+         .settings-container input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+         .settings-container input[type="color"]::-webkit-color-swatch { border: 1px solid #555; border-radius: 4px; }
+         .settings-container input[type="color"]::-moz-color-swatch { border: 1px solid #555; border-radius: 4px; }
+
+        .settings-container select,
+        .settings-container input[type="number"] {
+            padding: 5px 8px;
+            border-radius: var(--border-radius-small);
+            border: 1px solid #555;
+            background-color: var(--bg-color-main);
+            color: var(--text-color-main);
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        .settings-container select { min-width: 120px; }
+        .settings-container input[type="number"] { width: 60px; }
+
+        .settings-container .settings-actions {
+            text-align: right;
+            margin-top: 25px;
+        }
+
+        .settings-container button {
+             padding: 8px 18px;
+             background-color: var(--accent-color);
+             color: white;
+             border: none;
+             border-radius: var(--border-radius-small);
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+        }
+        .settings-container button:hover { background-color: var(--accent-color-hover); }
+
+        /* --- Scrollbar --- */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #2e2e2e; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; border: 2px solid #2e2e2e; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color-hover); }
+        * { scrollbar-width: thin; scrollbar-color: var(--accent-color) #2e2e2e; }
+
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 768px) { /* Adjusted breakpoint */
+             .controls {
+                 flex-direction: column;
+                 align-items: stretch;
+             }
+             .controls .input-group,
+             .controls .save-group,
+             .controls .action-buttons {
+                 width: 100%; /* Make groups full width */
+                 justify-content: center; /* Center items within groups */
+             }
+             .controls .input-group {
+                  flex-direction: column; /* Stack find/replace inputs */
+             }
+             .controls .save-group {
+                  justify-content: space-between; /* Space out filename and button */
+             }
+             .controls .action-buttons {
+                  justify-content: space-around; /* Space out action buttons */
+                  margin-top: 10px; /* Add space above action buttons */
+             }
+             .controls .action-buttons button {
+                  flex-grow: 1;
+                  margin: 0 5px;
+             }
+             /* Adjust stats layout for more space */
+             .stats-container {
+                 justify-content: space-around; /* Distribute space */
+             }
+        }
+
+        @media (max-width: 480px) { /* Smaller screens */
+             body { padding: 10px; }
+             .editor-container,
+             .controls,
+             .stats-container { width: 95%; }
+             textarea#editor { height: 60vh; padding: 10px; }
+             h1 { font-size: 1.6em; }
+             .settings-container { width: 95%; padding: 20px 15px; }
+             .settings-container label { flex-wrap: wrap; } /* Allow label content wrap */
+             /* Further adjust stats layout */
+             .stats-container {
+                 flex-direction: column; /* Stack stats vertically */
+                 align-items: flex-start; /* Align stats text left */
+                 gap: 5px; /* Reduce gap when stacked */
+             }
+             .stats-container span {
+                 width: 100%; /* Make each stat take full width */
+             }
+        }
+
+    </style>
+</head>
+<body>
+    <h1>EditPad Pro</h1>
+
+    <div class="editor-container" id="editorContainer"> <!-- Added ID for easier targeting -->
+        <textarea id="editor" spellcheck="false" oninput="updateStats()"></textarea>
+    </div>
+
+    <div class="controls">
+        <div class="input-group"> <!-- Group for Find/Replace -->
+            <input type="text" id="replaceText" placeholder="Find text...">
+            <input type="text" id="withText" placeholder="Replace with...">
+             <button onclick="replaceText()" title="Replace All Occurrences">Replace All</button>
+        </div>
+
+        <div class="save-group"> <!-- Group for Save -->
+             <input type="text" id="saveFilename" placeholder="filename.ext" title="Enter desired filename with extension">
+             <button onclick="saveText()" title="Download text as file">Save File</button>
+        </div>
+
+        <div class="action-buttons"> <!-- Group for other actions -->
+             <button onclick="toggleSettings()" title="Customize appearance">Settings</button>
+        </div>
+    </div>
+
+    <div class="stats-container" id="statsContainer">
+        <span id="wordCount" aria-live="polite">Words: 0</span>
+        <!-- Updated charCount span -->
+        <span id="charCount" aria-live="polite">Characters: 0 (0 b)</span>
+    </div>
+
+    <!-- Overlay for Modal -->
+    <div class="overlay" id="overlay" onclick="closeSettings()"></div>
+
+    <!-- Settings Modal -->
+    <div class="settings-container" id="settingsContainer">
+        <h2>Settings</h2>
+
+        <label>
+             <span>Show Stats Bar</span>
+             <input type="checkbox" id="toggleStats">
+        </label>
+        <label>
+            <span>Editor Background</span>
+            <input type="color" id="bgColor">
+        </label>
+        <label>
+            <span>Text Color</span>
+            <input type="color" id="textColor">
+        </label>
+        <label>
+             <span>Font Family</span>
+             <select id="fontFamily">
+                 <option value="Arial, sans-serif">Arial</option>
+                 <option value="'Courier New', monospace" selected>Courier New</option>
+                 <option value="Georgia, serif">Georgia</option>
+                 <option value="Helvetica, sans-serif">Helvetica</option>
+                 <option value="Impact, sans-serif">Impact</option>
+                 <option value="'Lato', sans-serif">Lato</option>
+                 <option value="'Lucida Console', monospace">Lucida Console</option>
+                 <option value="'Montserrat', sans-serif">Montserrat</option>
+                 <option value="'Open Sans', sans-serif">Open Sans</option>
+                 <option value="'Poppins', sans-serif">Poppins</option>
+                 <option value="'Roboto', sans-serif">Roboto</option>
+                 <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                 <option value="Tahoma, sans-serif">Tahoma</option>
+                 <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                 <option value="Verdana, sans-serif">Verdana</option>
+             </select>
+        </label>
+        <label>
+            <span>Font Size (px)</span>
+            <input type="number" id="fontSize" min="8" max="48">
+        </label>
+        <label>
+            <span>Line Spacing</span>
+            <input type="number" id="lineSpacing" min="1" max="3" step="0.1">
+        </label>
+
+        <div class="settings-actions">
+            <button onclick="closeSettings()">Close</button>
+        </div>
+    </div>
+
+    <script defer>
+        // --- DOM Elements ---
+        const editor = document.getElementById("editor");
+        const editorContainer = document.getElementById("editorContainer"); // Get container
+        const wordCountEl = document.getElementById("wordCount");
+        const charCountEl = document.getElementById("charCount");
+        const replaceTextEl = document.getElementById("replaceText");
+        const withTextEl = document.getElementById("withText");
+        const saveFilenameEl = document.getElementById("saveFilename"); // New filename input
+        const settingsContainer = document.getElementById("settingsContainer");
+        const overlay = document.getElementById("overlay");
+        const statsContainer = document.getElementById("statsContainer");
+
+        // Settings Input Elements
+        const toggleStatsEl = document.getElementById("toggleStats");
+        const bgColorEl = document.getElementById("bgColor");
+        const textColorEl = document.getElementById("textColor");
+        const fontFamilyEl = document.getElementById("fontFamily");
+        const fontSizeEl = document.getElementById("fontSize");
+        const lineSpacingEl = document.getElementById("lineSpacing");
+
+        // --- Core Logic ---
+
+        /**
+         * Formats bytes into a human-readable string (b, kb, mb, gb).
+         * @param {number} bytes - The number of bytes.
+         * @param {number} [decimals=1] - The number of decimal places for kb, mb, gb.
+         * @returns {string} The formatted byte string.
+         */
+        function formatBytes(bytes, decimals = 1) {
+            if (bytes === 0) return '0 b';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['b', 'kb', 'mb', 'gb']; // Removed 'tb' for typical text editor scope
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            // Ensure index is within bounds of defined sizes
+            const unitIndex = Math.min(i, sizes.length - 1);
+
+            // Handle potential NaN/Infinity for very large numbers if needed, though unlikely here
+            if (!Number.isFinite(bytes) || unitIndex < 0) return 'N/A';
+
+            // For bytes, no decimals needed
+            if (unitIndex === 0) {
+                return `${bytes} ${sizes[unitIndex]}`;
+            }
+
+            // Calculate and format for kb, mb, gb
+            return `${parseFloat((bytes / Math.pow(k, unitIndex)).toFixed(dm))} ${sizes[unitIndex]}`;
+        }
+
+
+        function updateStats() {
+            const text = editor.value;
+            const words = text.match(/\S+/g) || [];
+            const charCount = text.length;
+
+            // Calculate byte size using Blob (represents file size well)
+            const byteSize = new Blob([text]).size;
+
+            // Format byte size
+            const formattedBytes = formatBytes(byteSize);
+
+            // Update UI
+            wordCountEl.textContent = `Words: ${words.length}`;
+            charCountEl.textContent = `Characters: ${charCount} (${formattedBytes})`; // Updated line
+        }
+
+        function replaceText() {
+            const findValue = replaceTextEl.value;
+            const replaceValue = withTextEl.value;
+
+            if (!findValue) {
+                alert("Please enter text to find.");
+                replaceTextEl.focus();
+                return;
+            }
+
+            try {
+                const regex = new RegExp(findValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "gi");
+                editor.value = editor.value.replace(regex, replaceValue);
+                updateStats(); // Update stats after replacement
+            } catch (error) {
+                console.error("Regex Error:", error);
+                alert("An error occurred with the 'Find' text pattern.\nError: " + error.message);
+            }
+        }
+
+         function saveText() {
+            const userFileName = saveFilenameEl.value.trim(); // Get filename from input
+
+            if (!userFileName) {
+                 alert("Please enter a filename (e.g., 'myfile.txt', 'script.lua').");
+                 saveFilenameEl.focus();
+                 return;
+            }
+
+            try {
+                const text = editor.value;
+                // Note: While Blob calculates size correctly, specifying charset=utf-8 ensures
+                // the *saved file* is explicitly UTF-8, which is generally best practice.
+                const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+                const link = document.createElement("a");
+
+                link.href = URL.createObjectURL(blob);
+                link.download = userFileName; // Use the user-provided filename
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            } catch (error) {
+                 console.error("Error saving file:", error);
+                 alert("Could not save the file. An error occurred.");
+            }
+        }
+
+        // --- Settings Modal Logic ---
+
+        function toggleSettings() {
+            settingsContainer.classList.toggle("show");
+            overlay.classList.toggle("show");
+        }
+
+        function closeSettings() {
+            settingsContainer.classList.remove("show");
+            overlay.classList.remove("show");
+        }
+
+        // --- Settings Persistence (LocalStorage) ---
+
+        const SETTINGS_KEY = 'editPadSettings_v2'; // Updated key if structure changes significantly
+
+        function applyAndSaveSetting(key, value, applyFn) {
+             try {
+                 applyFn(value);
+                 saveSettings();
+             } catch (error) {
+                 console.error(`Error applying setting ${key}:`, error);
+             }
+        }
+
+        function saveSettings() {
+            const settings = {
+                statsVisible: toggleStatsEl.checked,
+                bgColor: bgColorEl.value,
+                textColor: textColorEl.value,
+                fontFamily: fontFamilyEl.value,
+                fontSize: fontSizeEl.value,
+                lineSpacing: lineSpacingEl.value,
+            };
+            try {
+                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (error) {
+                 console.error("Error saving settings to localStorage:", error);
+            }
+        }
+
+        function loadAndApplySettings() {
+            // Set default filename input value
+            const defaultTimestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
+            saveFilenameEl.value = `editpad-${defaultTimestamp}.txt`;
+
+            try {
+                const savedSettings = localStorage.getItem(SETTINGS_KEY);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+
+                    // Apply Stats Visibility
+                    toggleStatsEl.checked = settings.statsVisible ?? true;
+                    statsContainer.classList.toggle('hidden', !toggleStatsEl.checked);
+
+
+                    // Apply Colors (Editor Container and Text)
+                    bgColorEl.value = settings.bgColor || '#252526';
+                    editorContainer.style.backgroundColor = bgColorEl.value; // Apply to container
+
+                    textColorEl.value = settings.textColor || '#d4d4d4';
+                    editor.style.color = textColorEl.value; // Apply to text
+
+
+                    // Apply Font
+                    fontFamilyEl.value = settings.fontFamily || "'Courier New', monospace";
+                    editor.style.fontFamily = fontFamilyEl.value;
+
+                    // Apply Font Size
+                    fontSizeEl.value = settings.fontSize || '16';
+                    editor.style.fontSize = `${fontSizeEl.value}px`;
+
+                    // Apply Line Spacing
+                    lineSpacingEl.value = settings.lineSpacing || '1.5';
+                    editor.style.lineHeight = lineSpacingEl.value;
+
+                    console.log("Settings loaded successfully.");
+
+                } else {
+                     // Set default UI values if no settings saved
+                     bgColorEl.value = '#252526';
+                     textColorEl.value = '#d4d4d4';
+                     fontFamilyEl.value = "'Courier New', monospace";
+                     fontSizeEl.value = '16';
+                     lineSpacingEl.value = '1.5';
+                     toggleStatsEl.checked = true;
+                     statsContainer.classList.remove('hidden');
+                     // Apply default visual styles
+                     editorContainer.style.backgroundColor = bgColorEl.value;
+                     editor.style.color = textColorEl.value;
+                     editor.style.fontFamily = fontFamilyEl.value;
+                     editor.style.fontSize = `${fontSizeEl.value}px`;
+                     editor.style.lineHeight = lineSpacingEl.value;
+
+                     console.log("No saved settings found, using defaults.");
+                }
+            } catch (error) {
+                console.error("Error loading settings from localStorage:", error);
+                // Apply hardcoded default styles as a fallback in case of error
+                 editorContainer.style.backgroundColor = '#252526';
+                 editor.style.color = '#d4d4d4';
+                 editor.style.fontFamily = "'Courier New', monospace";
+                 editor.style.fontSize = '16px';
+                 editor.style.lineHeight = '1.5';
+                 statsContainer.classList.remove('hidden');
+                 toggleStatsEl.checked = true;
+                 // Set default UI input values on error too
+                 bgColorEl.value = '#252526';
+                 textColorEl.value = '#d4d4d4';
+                 fontFamilyEl.value = "'Courier New', monospace";
+                 fontSizeEl.value = '16';
+                 lineSpacingEl.value = '1.5';
+                 toggleStatsEl.checked = true;
+            }
+        }
+
+
+        // --- Event Listeners Setup ---
+
+        // Settings Change Listeners
+        toggleStatsEl.addEventListener("change", function() {
+            applyAndSaveSetting('statsVisible', this.checked, (val) => {
+                 statsContainer.classList.toggle('hidden', !val);
+            });
+        });
+
+        bgColorEl.addEventListener("input", function() {
+             applyAndSaveSetting('bgColor', this.value, (val) => {
+                 editorContainer.style.backgroundColor = val;
+             });
+        });
+
+        textColorEl.addEventListener("input", function() {
+             applyAndSaveSetting('textColor', this.value, (val) => {
+                 editor.style.color = val;
+             });
+        });
+
+        fontFamilyEl.addEventListener("change", function() {
+             applyAndSaveSetting('fontFamily', this.value, (val) => {
+                 editor.style.fontFamily = val;
+             });
+        });
+
+        fontSizeEl.addEventListener("input", function() {
+             applyAndSaveSetting('fontSize', this.value, (val) => {
+                 const size = Math.max(8, Math.min(48, parseInt(val) || 16));
+                 if (size !== parseInt(val)) {
+                     fontSizeEl.value = size;
+                 }
+                 editor.style.fontSize = `${size}px`;
+                 // No need to explicitly call saveSettings here due to applyAndSaveSetting
+             });
+        });
+         // Save final value on change (e.g., losing focus)
+        fontSizeEl.addEventListener("change", saveSettings);
+
+
+        lineSpacingEl.addEventListener("input", function() {
+             applyAndSaveSetting('lineSpacing', this.value, (val) => {
+                 const spacing = Math.max(1, Math.min(3, parseFloat(val) || 1.5));
+                  if (spacing !== parseFloat(val)) {
+                     lineSpacingEl.value = spacing.toFixed(1);
+                 }
+                 editor.style.lineHeight = spacing;
+                  // No need to explicitly call saveSettings here
+             });
+        });
+        // Save final value on change
+        lineSpacingEl.addEventListener("change", saveSettings);
+
+
+        // Close modal if escape key is pressed
+         document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && settingsContainer.classList.contains('show')) {
+                closeSettings();
+            }
+        });
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+             loadAndApplySettings(); // Load saved settings first
+             updateStats();          // Then update stats based on potential initial content and calculate bytes
+             console.log("EditPad Pro Initialized");
+        });
+
+    </script>
+
+</body>
+</html>
