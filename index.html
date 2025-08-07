@@ -3,31 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A fast, feature-rich, and customizable in-browser code and text editor built with CodeMirror.">
     <title>EditPad Pro</title>
 
+    <!-- Google Fonts for additional editor font options -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&family=Lato&family=Montserrat&family=Open+Sans&family=Poppins&family=Roboto&family=Source+Code+Pro&display=swap" rel="stylesheet">
+
     <!-- CodeMirror Core CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
-    <!-- CodeMirror Theme CSS (Matches your dark theme well) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" integrity="sha512-N6OfksbX969aECiRiawMoG170MIkAmWnMu7oLws2rG5NymC3F9Jdxts99V8GnLkvS5pQ6VImrW554r7dC3s0SA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- CodeMirror Theme CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" integrity="sha512-MID2Jg9G+5hGz84f2KWMoJMFy36wK4Pq5c18hLpB3l4+9EwGgNM3Tq+2G8nB+06aM2D8V5d0v1YvOQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         :root {
-            /* Keep existing CSS variables */
             --bg-color-main: #1e1e1e;
             --bg-color-editor: #252526;
-            --bg-color-ui: #2e2e2e;
+            --bg-color-ui: #2d2d30;
             --text-color-main: #d4d4d4;
             --accent-color: #007acc;
-            --accent-color-hover: #005a9e;
+            --accent-color-hover: #0095ff;
+            --border-color: #3f3f46;
             --border-radius-main: 8px;
             --border-radius-small: 5px;
-            --box-shadow-main: 0 4px 10px rgba(0, 0, 0, 0.5);
-            --box-shadow-modal: 0 6px 15px rgba(0, 0, 0, 0.7);
+            --box-shadow-main: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --box-shadow-modal: 0 6px 20px rgba(0, 0, 0, 0.7);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
         }
 
         body {
-            /* Keep existing body styles */
-            font-family: Arial, sans-serif;
+            font-family: 'Lato', 'Open Sans', Arial, sans-serif;
             background: var(--bg-color-main);
             color: var(--text-color-main);
             display: flex;
@@ -36,39 +45,39 @@
             padding: 20px;
             margin: 0;
             min-height: 100vh;
-            box-sizing: border-box;
-            -webkit-overflow-scrolling: touch;
         }
 
         h1 {
             color: var(--text-color-main);
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-weight: 300;
+            letter-spacing: 1px;
         }
 
         .editor-container {
-             /* Keep existing styles */
-            width: 85%;
-            max-width: 900px;
+            width: 90%;
+            max-width: 1000px;
             border-radius: var(--border-radius-main);
             box-shadow: var(--box-shadow-main);
-            padding: 0px;
-            display: flex;
             overflow: hidden;
-            margin-bottom: 15px;
-            border: 1px solid var(--bg-color-ui);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
         }
 
         /* CodeMirror Styling */
         .CodeMirror {
-            font-family: 'Courier New', monospace;
-            height: 50vh;
-            min-height: 300px;
+            font-family: 'Fira Code', 'Source Code Pro', monospace;
+            height: 55vh;
+            min-height: 350px;
             width: 100%;
             font-size: 16px;
-            line-height: 1.5em;
+            line-height: 1.6;
         }
-        textarea#editor { display: none; }
 
+        textarea#editor {
+            display: none;
+        }
 
         /* Controls Styling */
         .controls {
@@ -76,106 +85,172 @@
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            width: 85%;
-            max-width: 900px;
-            margin-bottom: 10px;
-            gap: 10px;
+            width: 90%;
+            max-width: 1000px;
+            margin-bottom: 15px;
+            gap: 15px;
         }
 
-        /* Group styling (keep input-group, save-group, action-buttons) */
-        .controls .language-group, /* Added previously */
-        .controls .input-group,
-        .controls .save-group,
-        .controls .action-buttons {
+        .controls .control-group {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        .controls .input-group, .controls .save-group { flex-grow: 1; min-width: 200px; }
+        .controls .input-group, .controls .save-group { flex-grow: 1; min-width: 220px; }
         .controls .language-group, .controls .action-buttons { flex-shrink: 0; }
+        .language-group > label {
+            white-space: nowrap;
+            font-size: 14px;
+            color: #ccc;
+        }
 
-
-        /* Input/Select/Button styling (keep) */
+        /* Input/Select/Button styling */
         .controls input[type="text"], .controls select {
-            padding: 8px 10px; border: 1px solid var(--bg-color-ui); background-color: var(--bg-color-main); color: var(--text-color-main); border-radius: var(--border-radius-small); font-size: 14px;
+            padding: 9px 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color-main);
+            color: var(--text-color-main);
+            border-radius: var(--border-radius-small);
+            font-size: 14px;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
         }
         .controls input[type="text"] { flex: 1; }
         .controls select { cursor: pointer; }
-        .controls input#saveFilename { flex-grow: 0; flex-shrink: 1; width: 180px; min-width: 120px; }
-        .controls input[type="text"]:focus, .controls select:focus { outline: none; border-color: var(--accent-color); }
-        .controls button {
-            padding: 8px 15px; border: none; border-radius: var(--border-radius-small); font-size: 14px; cursor: pointer; background: var(--accent-color); color: white; transition: background-color 0.3s ease; white-space: nowrap;
+        .controls input#saveFilename { flex-grow: 0; flex-shrink: 1; width: 200px; min-width: 150px; }
+        .controls input[type="text"]:focus, .controls select:focus {
+            outline: none;
+            border-color: var(--accent-color);
         }
-        .controls button:hover { background: var(--accent-color-hover); }
 
-        /* Stats Container Styling (keep) */
-        .stats-container {
-            display: flex; justify-content: space-between; width: 85%; max-width: 900px; margin-top: 10px; font-size: 14px; padding: 8px 12px; background: var(--bg-color-ui); border-radius: var(--border-radius-small); color: #aaa; transition: opacity 0.3s ease, height 0.3s ease, padding 0.3s ease, margin 0.3s ease; flex-wrap: wrap; gap: 10px;
+        button {
+            padding: 9px 16px;
+            border: none;
+            border-radius: var(--border-radius-small);
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--accent-color);
+            color: white;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            white-space: nowrap;
         }
-        .stats-container.hidden { opacity: 0; height: 0; padding-top: 0; padding-bottom: 0; border: none; overflow: hidden; margin-top: 0; }
+        button:hover { background: var(--accent-color-hover); }
+        button:focus-visible { outline: 2px solid var(--accent-color-hover); outline-offset: 2px; }
+        button:active { transform: scale(0.98); }
+
+
+        /* Stats Container Styling */
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 1000px;
+            margin-top: 10px;
+            font-size: 13px;
+            padding: 10px 15px;
+            background: var(--bg-color-ui);
+            border-radius: var(--border-radius-small);
+            color: #aaa;
+            transition: opacity 0.3s ease, height 0.3s ease, padding 0.3s ease, margin 0.3s ease, transform 0.3s ease;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .stats-container.hidden {
+            opacity: 0;
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: none;
+            overflow: hidden;
+            margin-top: 0;
+            transform: scaleY(0);
+        }
         .stats-container span { white-space: nowrap; }
 
-        /* --- Settings Modal CSS (Restored) --- */
+        /* Settings Modal CSS */
         .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .overlay.show { display: block; opacity: 1; }
+        .overlay.show { opacity: 1; visibility: visible; }
 
         .settings-container {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background: var(--bg-color-ui); padding: 25px 30px; border-radius: var(--border-radius-main); box-shadow: var(--box-shadow-modal); z-index: 1000; display: none; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; width: 90%; max-width: 400px; color: var(--text-color-main);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background: var(--bg-color-ui);
+            padding: 25px 30px;
+            border-radius: var(--border-radius-main);
+            box-shadow: var(--box-shadow-modal);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+            width: 90%;
+            max-width: 420px;
+            color: var(--text-color-main);
         }
-        .settings-container.show { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .settings-container.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
 
-        .settings-container h2 { margin-top: 0; margin-bottom: 20px; text-align: center; color: var(--text-color-main); }
-        .settings-container label { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-        .settings-container input[type="checkbox"] { margin-right: 8px; accent-color: var(--accent-color); width: 16px; height: 16px; flex-shrink: 0; }
-        .settings-container label span { flex-grow: 1; margin-right: 10px; word-break: keep-all; }
-        .settings-container input[type="color"] { margin-left: 10px; border: none; background: none; height: 25px; width: 40px; padding: 0; cursor: pointer; flex-shrink: 0; }
+        .settings-container h2 { margin-top: 0; margin-bottom: 25px; text-align: center; color: var(--text-color-main); font-weight: 400; }
+        .settings-container .setting { margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+        .settings-container input[type="checkbox"] { margin-right: 8px; accent-color: var(--accent-color); width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+        .settings-container .setting span { flex-grow: 1; margin-right: 10px; }
+        .settings-container input[type="color"] { margin-left: 10px; border: none; background: none; height: 30px; width: 45px; padding: 0; cursor: pointer; flex-shrink: 0; }
         .settings-container input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         .settings-container input[type="color"]::-webkit-color-swatch { border: 1px solid #555; border-radius: 4px; }
         .settings-container input[type="color"]::-moz-color-swatch { border: 1px solid #555; border-radius: 4px; }
         .settings-container select, .settings-container input[type="number"] {
-            padding: 5px 8px; border-radius: var(--border-radius-small); border: 1px solid #555; background-color: var(--bg-color-main); color: var(--text-color-main); margin-left: 10px; flex-shrink: 0;
+            padding: 6px 10px;
+            border-radius: var(--border-radius-small);
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color-main);
+            color: var(--text-color-main);
+            margin-left: 10px;
+            flex-shrink: 0;
         }
-        .settings-container select { min-width: 120px; }
-        .settings-container input[type="number"] { width: 60px; }
-        .settings-container .settings-actions { text-align: right; margin-top: 25px; }
-        .settings-container button {
-             padding: 8px 18px; background-color: var(--accent-color); color: white; border: none; border-radius: var(--border-radius-small); cursor: pointer; transition: background-color 0.3s ease;
-        }
-        .settings-container button:hover { background-color: var(--accent-color-hover); }
+        .settings-container select { min-width: 140px; }
+        .settings-container input[type="number"] { width: 70px; }
+        .settings-container .settings-actions { text-align: right; margin-top: 30px; }
 
-        /* Scrollbar Styling (keep) */
-        ::-webkit-scrollbar { width: 10px; } ::-webkit-scrollbar-track { background: #2e2e2e; border-radius: 10px; } ::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; border: 2px solid #2e2e2e; } ::-webkit-scrollbar-thumb:hover { background: var(--accent-color-hover); } * { scrollbar-width: thin; scrollbar-color: var(--accent-color) #2e2e2e; }
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color-ui); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; border: 3px solid var(--bg-color-ui); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color-hover); }
+        * { scrollbar-width: thin; scrollbar-color: var(--accent-color) var(--bg-color-ui); }
 
 
-        /* Responsive Adjustments (Review controls) */
-        @media (max-width: 768px) {
+        /* Responsive Adjustments */
+        @media (max-width: 820px) {
              .controls { flex-direction: column; align-items: stretch; }
-             .controls .language-group, .controls .input-group, .controls .save-group, .controls .action-buttons {
-                 width: 100%; justify-content: center; margin-bottom: 10px;
-             }
-             .controls .input-group { flex-direction: column; gap: 5px; }
+             .controls .control-group { width: 100%; justify-content: center; }
+             .controls .input-group { flex-direction: column; gap: 8px; }
              .controls .save-group { justify-content: space-between; }
              .controls .action-buttons { justify-content: space-around; }
-             .controls .language-group { justify-content: flex-start; }
              .controls .action-buttons button { flex-grow: 1; margin: 0 5px; }
-             .stats-container { justify-content: space-around; }
         }
         @media (max-width: 480px) {
              body { padding: 10px; }
-             .editor-container, .controls, .stats-container { width: 95%; }
-             h1 { font-size: 1.6em; }
-             .settings-container { width: 95%; padding: 20px 15px; } /* Keep modal responsive */
-             .settings-container label { flex-wrap: wrap; }
-             .stats-container { flex-direction: column; align-items: flex-start; gap: 5px; }
-             .stats-container span { width: 100%; }
-             .controls .save-group input#saveFilename { width: 150px; }
+             .editor-container, .controls, .stats-container { width: 98%; }
+             h1 { font-size: 1.8em; }
+             .settings-container { width: 95%; padding: 20px 15px; }
+             .settings-container .setting { flex-wrap: wrap; }
+             .stats-container { flex-direction: column; align-items: flex-start; gap: 8px; }
         }
-
     </style>
 </head>
 <body>
+
     <h1>EditPad Pro</h1>
 
     <div class="editor-container" id="editorContainer">
@@ -183,355 +258,384 @@
     </div>
 
     <div class="controls">
-         <!-- Language Selection -->
-        <div class="language-group">
-            <label for="languageSelect" style="margin-right: 5px; white-space: nowrap;">Language:</label>
-            <select id="languageSelect">
+        <div class="control-group language-group">
+            <label for="languageSelect">Language:</label>
+            <select id="languageSelect" title="Select Syntax Highlighting">
                  <option value="null">Plain Text</option>
                  <option value="htmlmixed">HTML</option>
                  <option value="css">CSS</option>
                  <option value="javascript">JavaScript</option>
-                 <option value="lua">Lua</option>
+                 <option value="markdown">Markdown</option>
+                 <option value="xml">XML</option>
                  <option value="python">Python</option>
+                 <option value="lua">Lua</option>
+                 <option value="php">PHP</option>
+                 <option value="sql">SQL</option>
             </select>
         </div>
 
-        <!-- Find/Replace Group -->
-        <div class="input-group">
-            <input type="text" id="replaceText" placeholder="Find text...">
-            <input type="text" id="withText" placeholder="Replace with...">
-             <button onclick="replaceText()" title="Replace All Occurrences">Replace All</button>
+        <div class="control-group input-group">
+            <input type="text" id="findText" placeholder="Find text...">
+            <input type="text" id="replaceWithText" placeholder="Replace with...">
+             <button id="replaceAllBtn" title="Replace All Occurrences">Replace All</button>
         </div>
 
-        <!-- Save Group -->
-        <div class="save-group">
+        <div class="control-group save-group">
              <input type="text" id="saveFilename" placeholder="filename.ext" title="Enter desired filename with extension">
-             <button onclick="saveText()" title="Download text as file">Save File</button>
+             <button id="saveFileBtn" title="Download text as file">Save File</button>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-             <button onclick="toggleSettings()" title="Customize appearance">Settings</button> <!-- Settings button restored -->
+        <div class="control-group action-buttons">
+             <button id="settingsBtn" title="Customize appearance">Settings</button>
         </div>
     </div>
 
     <div class="stats-container" id="statsContainer">
         <span id="wordCount" aria-live="polite">Words: 0</span>
-        <span id="charCount" aria-live="polite">Characters: 0 (0 b)</span>
+        <span id="charCount" aria-live="polite">Characters: 0 (0 B)</span>
     </div>
 
-    <!-- Overlay for Modal (Restored) -->
-    <div class="overlay" id="overlay" onclick="closeSettings()"></div>
-
-    <!-- Settings Modal (Restored) -->
+    <!-- Modal and Overlay -->
+    <div class="overlay" id="overlay"></div>
     <div class="settings-container" id="settingsContainer">
         <h2>Settings</h2>
 
-        <label>
+        <div class="setting">
              <span>Show Stats Bar</span>
              <input type="checkbox" id="toggleStats">
-        </label>
-        <label>
-            <span>Editor BG (Override)</span>
+        </div>
+        <div class="setting">
+            <span>Editor BG Color</span>
             <input type="color" id="bgColor" title="Overrides theme background">
-        </label>
-        <label>
-            <span>Text Color (Override)</span>
+        </div>
+        <div class="setting">
+            <span>Text Color</span>
             <input type="color" id="textColor" title="Overrides theme default text color">
-        </label>
-        <label>
+        </div>
+        <div class="setting">
              <span>Font Family</span>
              <select id="fontFamily">
-                 <option value="Arial, sans-serif">Arial</option>
-                 <option value="'Courier New', monospace" selected>Courier New</option>
-                 <option value="Georgia, serif">Georgia</option>
-                 <option value="Helvetica, sans-serif">Helvetica</option>
-                 <option value="Impact, sans-serif">Impact</option>
-                 <option value="'Lato', sans-serif">Lato</option>
+                 <option value="'Fira Code', monospace">Fira Code</option>
+                 <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                 <option value="'Courier New', monospace">Courier New</option>
                  <option value="'Lucida Console', monospace">Lucida Console</option>
-                 <option value="'Montserrat', sans-serif">Montserrat</option>
-                 <option value="'Open Sans', sans-serif">Open Sans</option>
-                 <option value="'Poppins', sans-serif">Poppins</option>
                  <option value="'Roboto', sans-serif">Roboto</option>
-                 <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                 <option value="Tahoma, sans-serif">Tahoma</option>
-                 <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                 <option value="'Open Sans', sans-serif">Open Sans</option>
+                 <option value="'Lato', sans-serif">Lato</option>
+                 <option value="Arial, sans-serif">Arial</option>
                  <option value="Verdana, sans-serif">Verdana</option>
+                 <option value="'Times New Roman', Times, serif">Times New Roman</option>
              </select>
-        </label>
-        <label>
+        </div>
+        <div class="setting">
             <span>Font Size (px)</span>
             <input type="number" id="fontSize" min="8" max="48">
-        </label>
-        <label>
+        </div>
+        <div class="setting">
             <span>Line Spacing</span>
             <input type="number" id="lineSpacing" min="1" max="3" step="0.1">
-        </label>
+        </div>
 
         <div class="settings-actions">
-            <button onclick="closeSettings()">Close</button> <!-- Close button restored -->
+            <button id="closeSettingsBtn">Close</button>
         </div>
     </div>
 
-    <!-- CodeMirror JS Assets (Keep) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/python/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/lua/lua.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/closetag.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/matchbrackets.min.js"></script>
+    <!-- CodeMirror JS Assets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js" integrity="sha512-2R6l2I+2DZRlEV4qD2rvGnhqJdZdjX2XpB8fCg3RkBxLpI2i88Jp3ltGDlASk1B3eB/H7p/vVd0MAzyoDk2oPw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js" integrity="sha512-9F1i9umwTSrAS2Ld2d5sK2sNn/dr+AFZqJs+dEa9z2E2r4i+cT71y1b/TFKsPO/Eflj1S4PL3qCjodR/w/pkKQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js" integrity="sha512-0t2W22PAl+xPjtrbQYjW43G6y0yq83fomGvP9I7A1zS2lQn/Vl1+xRSj7irYl6R9P3w/P9mD/Z2N1x9V2F+gA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js" integrity="sha512-t0+t2/fPz+UBf0+e2pWUhCR+4QoD6l5PdtmO+Q8Lgv/eM2aWAnb3/KkE2g1Jk2rYw3f/y3GIOsHrcJ6Imq2SA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js" integrity="sha512-tXA5m2uGj611kX/4x24K+tst13p+pT3lo1pCJSKkN3DvrJ6abRjCD2oHrgfWfR+PZ9pDqQM8MIImzY/+bgTtcA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js" integrity="sha512-pUrA2vX5vFv9RkEOw2SjPbg+wS3kY5xJbtrw2B6ASZcs+wSMHgyk+1J02kRcz5lMh8fL7JpTSlYh2gKyP8eHgg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js" integrity="sha512-iitGexH2Kzce4H7R20sHfd3KkUcvs2eJbxPaPZDNy/7XGk1gL4/sroEkqBsyxCJr/o2I4U1OPkS0y1OQWJ6FwA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js" integrity="sha512-/OlDrtmbv4hHjYw2bJqMtaUItJeIqOAnLMC/IUn+L3h5XGJeIdCj2ygsnLfJbT17vtdlI87a41sMh1F2F2QGdw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js" integrity="sha512-8pQ2aQj2feF1m9K3gP/D8Yx+y7Gz1RI2cOa3h2K7qSoi3ow9/s93H5RFi+r9K8K3nZouhZqj/H1CzeGa2gA2IA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js" integrity="sha512-AwtapwBSRTqjCCaJ7f3UEbJ0/e/P1sFz1J87b3zPZl/m3L5XNMFD/y+skqWSo/wXU1nAPtXt3S99IXwX6k/gIA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js" integrity="sha512-h4BfJ7Yk0o0x+bA9Wn/6dJFTFk0rBbxJ5P4piPA/LUCGnE7E73p3aJ5/3CM3Sh7M45iE72F0GjW+ffuvrY1NQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js" integrity="sha512-iNlEUn0VIMQ1F/L/QnAyAzQnZUnJqLzRSaJ20cZAI/ipdrPZkP3h9OAEoP11jDUi+ODlJ4O2o73dIq81IpnQsw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 
-    <script defer>
-        // --- DOM Elements (Keep references, including modal elements) ---
-        const editorTextarea = document.getElementById("editor");
-        const wordCountEl = document.getElementById("wordCount");
-        const charCountEl = document.getElementById("charCount");
-        const replaceTextEl = document.getElementById("replaceText");
-        const withTextEl = document.getElementById("withText");
-        const saveFilenameEl = document.getElementById("saveFilename");
-        const settingsContainer = document.getElementById("settingsContainer"); // Modal container
-        const overlay = document.getElementById("overlay"); // Modal overlay
-        const statsContainer = document.getElementById("statsContainer");
-        const languageSelectEl = document.getElementById("languageSelect");
-
-        // Settings Input Elements (Keep references)
-        const toggleStatsEl = document.getElementById("toggleStats");
-        const bgColorEl = document.getElementById("bgColor");
-        const textColorEl = document.getElementById("textColor");
-        const fontFamilyEl = document.getElementById("fontFamily");
-        const fontSizeEl = document.getElementById("fontSize");
-        const lineSpacingEl = document.getElementById("lineSpacing");
-
-        // --- CodeMirror Instance ---
-        let cmEditor;
-
-        // --- Core Logic (Keep formatBytes, updateStats, replaceText, saveText) ---
-        function formatBytes(bytes, decimals = 1) { /* ... keep function ... */
-            if (bytes === 0) return '0 b';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['b', 'kb', 'mb', 'gb'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            const unitIndex = Math.min(i, sizes.length - 1);
-            if (!Number.isFinite(bytes) || unitIndex < 0) return 'N/A';
-            if (unitIndex === 0) return `${bytes} ${sizes[unitIndex]}`;
-            return `${parseFloat((bytes / Math.pow(k, unitIndex)).toFixed(dm))} ${sizes[unitIndex]}`;
-         }
-
-        function updateStats() { /* ... keep function (uses cmEditor.getValue) ... */
-             if (!cmEditor) return;
-             const text = cmEditor.getValue();
-             const words = text.match(/\S+/g) || [];
-             const charCount = text.length;
-             const byteSize = new Blob([text]).size;
-             const formattedBytes = formatBytes(byteSize);
-             wordCountEl.textContent = `Words: ${words.length}`;
-             charCountEl.textContent = `Characters: ${charCount} (${formattedBytes})`;
-         }
-
-        function replaceText() { /* ... keep function (uses cmEditor.getValue/setValue) ... */
-             if (!cmEditor) return;
-             const findValue = replaceTextEl.value;
-             const replaceValue = withTextEl.value;
-             if (!findValue) { alert("Please enter text to find."); replaceTextEl.focus(); return; }
-             try {
-                 const regex = new RegExp(findValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "gi");
-                 const currentText = cmEditor.getValue();
-                 cmEditor.setValue(currentText.replace(regex, replaceValue));
-             } catch (error) { console.error("Regex Error:", error); alert("An error occurred... Error: " + error.message); }
-         }
-
-        function saveText() { /* ... keep function (uses cmEditor.getValue) ... */
-             if (!cmEditor) return;
-             const userFileName = saveFilenameEl.value.trim();
-             if (!userFileName) { alert("Please enter a filename..."); saveFilenameEl.focus(); return; }
-             try {
-                 const text = cmEditor.getValue();
-                 const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-                 const link = document.createElement("a");
-                 link.href = URL.createObjectURL(blob);
-                 link.download = userFileName;
-                 document.body.appendChild(link);
-                 link.click();
-                 document.body.removeChild(link);
-                 URL.revokeObjectURL(link.href);
-             } catch (error) { console.error("Error saving file:", error); alert("Could not save the file."); }
-         }
-
-        // --- Language Selection Logic (Keep changeLanguage, updateFilenameHint) ---
-        function changeLanguage() { /* ... keep function (uses cmEditor.setOption) ... */
-             if (!cmEditor) return;
-             let mode = languageSelectEl.value;
-             if (mode === 'null') mode = null;
-             cmEditor.setOption("mode", mode);
-             console.log("Mode changed to:", mode || "Plain Text");
-             updateFilenameHint(mode);
-         }
-        function updateFilenameHint(mode) { /* ... keep function ... */
-             let extension = ".txt";
-             switch(mode) {
-                 case "htmlmixed": extension = ".html"; break;
-                 case "css": extension = ".css"; break;
-                 case "javascript": extension = ".js"; break;
-                 case "lua": extension = ".lua"; break;
-                 case "python": extension = ".py"; break;
-             }
-             const currentFilename = saveFilenameEl.value;
-             if (currentFilename.startsWith('editpad-') || currentFilename === '' || currentFilename.endsWith('.txt') ) {
-                 const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
-                 saveFilenameEl.value = `editpad-${timestamp}${extension}`;
-             } else if (!currentFilename.includes('.')) {
-                 saveFilenameEl.value = `${currentFilename}${extension}`;
-             }
-         }
-
-        // --- Settings Modal Logic (Restored) ---
-        function toggleSettings() {
-            settingsContainer.classList.toggle("show");
-            overlay.classList.toggle("show");
-        }
-
-        function closeSettings() {
-            settingsContainer.classList.remove("show");
-            overlay.classList.remove("show");
-        }
-
-        // --- Settings Persistence (Keep applyAndSaveSetting, saveSettings, loadAndApplySettings) ---
-        const SETTINGS_KEY = 'editPadPro_CM_Settings_v1';
-
-        function applyAndSaveSetting(key, value, applyFn) { /* ... keep function ... */
-             try { applyFn(value); saveSettings(); } catch (error) { console.error(`Error applying setting ${key}:`, error); }
-         }
-
-        function saveSettings() { /* ... keep function (saves settings object) ... */
-             if (!cmEditor) return;
-             const settings = {
-                 statsVisible: toggleStatsEl.checked,
-                 language: languageSelectEl.value,
-                 bgColorOverride: bgColorEl.value,
-                 textColorOverride: textColorEl.value,
-                 fontFamily: fontFamilyEl.value,
-                 fontSize: fontSizeEl.value,
-                 lineSpacing: lineSpacingEl.value,
-             };
-             try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (error) { console.error("Error saving settings:", error); }
-         }
-
-        function loadAndApplySettings() { /* ... keep function (loads settings AND initializes CM) ... */
-             const defaultTimestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
-             saveFilenameEl.value = `editpad-${defaultTimestamp}.txt`;
-
-             let loadedSettings = {};
-             try {
-                 const savedSettings = localStorage.getItem(SETTINGS_KEY);
-                 if (savedSettings) { loadedSettings = JSON.parse(savedSettings); console.log("Settings loaded."); }
-                 else { console.log("No saved settings found."); }
-             } catch (error) { console.error("Error loading settings:", error); }
-
-             // Initialize CodeMirror
-             cmEditor = CodeMirror.fromTextArea(editorTextarea, {
-                 mode: loadedSettings.language || null, theme: "material-darker", lineNumbers: true, lineWrapping: true, indentUnit: 4, tabSize: 4, autoCloseTags: true, matchBrackets: true
-             });
-
-             // Apply Settings to UI Controls and CM instance
-             const cmWrapper = cmEditor.getWrapperElement();
-
-             toggleStatsEl.checked = loadedSettings.statsVisible ?? true;
-             statsContainer.classList.toggle('hidden', !toggleStatsEl.checked);
-
-             languageSelectEl.value = loadedSettings.language || 'null';
-             updateFilenameHint(languageSelectEl.value);
-
-             bgColorEl.value = loadedSettings.bgColorOverride || '#252526';
-             if (bgColorEl.value !== '#252526') cmWrapper.style.backgroundColor = bgColorEl.value; else cmWrapper.style.backgroundColor = '';
-
-             textColorEl.value = loadedSettings.textColorOverride || '#d4d4d4';
-             if (textColorEl.value !== '#d4d4d4') cmWrapper.style.color = textColorEl.value; else cmWrapper.style.color = '';
-
-             fontFamilyEl.value = loadedSettings.fontFamily || "'Courier New', monospace";
-             cmWrapper.style.fontFamily = fontFamilyEl.value;
-
-             fontSizeEl.value = loadedSettings.fontSize || '16';
-             cmWrapper.style.fontSize = `${fontSizeEl.value}px`;
-
-             lineSpacingEl.value = loadedSettings.lineSpacing || '1.5';
-             cmWrapper.style.lineHeight = lineSpacingEl.value;
-
-             // Final Setup
-             cmEditor.on('change', updateStats);
-             cmEditor.refresh();
-         }
-
-        // --- Event Listeners Setup ---
-
-        // Language change listener (Keep)
-        languageSelectEl.addEventListener("change", () => {
-             applyAndSaveSetting('language', languageSelectEl.value, changeLanguage);
-        });
-
-        // Settings Change Listeners (Target UI elements and call applyAndSaveSetting)
-        toggleStatsEl.addEventListener("change", function() {
-            applyAndSaveSetting('statsVisible', this.checked, (val) => {
-                 statsContainer.classList.toggle('hidden', !val);
-            });
-        });
-        bgColorEl.addEventListener("input", function() {
-             applyAndSaveSetting('bgColorOverride', this.value, (val) => {
-                 cmEditor.getWrapperElement().style.backgroundColor = val;
-             });
-         });
-        textColorEl.addEventListener("input", function() {
-             applyAndSaveSetting('textColorOverride', this.value, (val) => {
-                 cmEditor.getWrapperElement().style.color = val;
-             });
-         });
-        fontFamilyEl.addEventListener("change", function() {
-             applyAndSaveSetting('fontFamily', this.value, (val) => {
-                 cmEditor.getWrapperElement().style.fontFamily = val;
-                 cmEditor.refresh();
-             });
-        });
-        fontSizeEl.addEventListener("input", function() {
-             applyAndSaveSetting('fontSize', this.value, (val) => {
-                 const size = Math.max(8, Math.min(48, parseInt(val) || 16));
-                 if (size !== parseInt(val || '16')) fontSizeEl.value = size;
-                 cmEditor.getWrapperElement().style.fontSize = `${size}px`;
-                 cmEditor.refresh();
-             });
-        });
-        fontSizeEl.addEventListener("change", saveSettings);
-        lineSpacingEl.addEventListener("input", function() {
-             applyAndSaveSetting('lineSpacing', this.value, (val) => {
-                 const spacing = Math.max(1, Math.min(3, parseFloat(val) || 1.5));
-                 if (spacing.toFixed(1) !== parseFloat(val).toFixed(1)) lineSpacingEl.value = spacing.toFixed(1);
-                 cmEditor.getWrapperElement().style.lineHeight = spacing;
-                 cmEditor.refresh();
-             });
-        });
-        lineSpacingEl.addEventListener("change", saveSettings);
-
-
-        // Escape key listener for modal (Keep)
-         document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape' && settingsContainer.classList.contains('show')) {
-                closeSettings();
-            }
-            // Optional: Ctrl+S Save Shortcut
-            // if (event.ctrlKey && event.key === 's') { event.preventDefault(); saveText(); }
-        });
-
-        // --- Initialization ---
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
-             loadAndApplySettings(); // Loads settings AND initializes CodeMirror
-             updateStats();          // Update stats based on initial content
-             console.log("EditPad Pro Initialized");
+
+            // --- DOM Elements ---
+            const editorTextarea = document.getElementById("editor");
+            const wordCountEl = document.getElementById("wordCount");
+            const charCountEl = document.getElementById("charCount");
+            const findTextEl = document.getElementById("findText");
+            const replaceWithTextEl = document.getElementById("replaceWithText");
+            const saveFilenameEl = document.getElementById("saveFilename");
+            const languageSelectEl = document.getElementById("languageSelect");
+            const statsContainer = document.getElementById("statsContainer");
+
+            // Modal and Settings Elements
+            const settingsContainer = document.getElementById("settingsContainer");
+            const overlay = document.getElementById("overlay");
+            const toggleStatsEl = document.getElementById("toggleStats");
+            const bgColorEl = document.getElementById("bgColor");
+            const textColorEl = document.getElementById("textColor");
+            const fontFamilyEl = document.getElementById("fontFamily");
+            const fontSizeEl = document.getElementById("fontSize");
+            const lineSpacingEl = document.getElementById("lineSpacing");
+
+            // Buttons
+            const replaceAllBtn = document.getElementById('replaceAllBtn');
+            const saveFileBtn = document.getElementById('saveFileBtn');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+
+            // --- State & Constants ---
+            const SETTINGS_KEY = 'editPadPro_Settings_v2';
+            let cmEditor;
+
+            // --- Utility Functions ---
+            function formatBytes(bytes, decimals = 1) {
+                if (!+bytes) return '0 B';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+            }
+
+            // --- Core Editor Functions ---
+            function updateStats() {
+                if (!cmEditor) return;
+                const text = cmEditor.getValue();
+                const words = text.match(/\S+/g) || [];
+                const charCount = text.length;
+                const byteSize = new Blob([text]).size;
+                wordCountEl.textContent = `Words: ${words.length}`;
+                charCountEl.textContent = `Characters: ${charCount} (${formatBytes(byteSize)})`;
+            }
+
+            function replaceAllText() {
+                if (!cmEditor) return;
+                const findValue = findTextEl.value;
+                const replaceValue = replaceWithTextEl.value;
+                if (!findValue) {
+                    alert("Please enter text to find.");
+                    findTextEl.focus();
+                    return;
+                }
+                try {
+                    const findRegex = new RegExp(findValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "gi");
+                    let matchCount = 0;
+                    const currentText = cmEditor.getValue();
+                    const newText = currentText.replace(findRegex, (match) => {
+                        matchCount++;
+                        return replaceValue;
+                    });
+
+                    if (matchCount > 0) {
+                        cmEditor.setValue(newText);
+                        alert(`Replaced ${matchCount} occurrence(s).`);
+                    } else {
+                        alert("No occurrences found.");
+                    }
+                } catch (error) {
+                    console.error("Regex Error:", error);
+                    alert("An error occurred during replacement. Please check your 'find' text.");
+                }
+            }
+
+            function saveFile() {
+                if (!cmEditor) return;
+                const userFileName = saveFilenameEl.value.trim();
+                if (!userFileName) {
+                    alert("Please enter a filename.");
+                    saveFilenameEl.focus();
+                    return;
+                }
+                try {
+                    const text = cmEditor.getValue();
+                    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = userFileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                } catch (error) {
+                    console.error("Error saving file:", error);
+                    alert("Could not save the file.");
+                }
+            }
+
+            function changeLanguage(mode) {
+                if (!cmEditor) return;
+                cmEditor.setOption("mode", mode === 'null' ? null : mode);
+                updateFilenameHint(mode);
+            }
+
+            function updateFilenameHint(mode) {
+                const extensions = {
+                    htmlmixed: ".html", css: ".css", javascript: ".js", markdown: ".md",
+                    python: ".py", lua: ".lua", php: ".php", sql: ".sql", xml: ".xml"
+                };
+                const extension = extensions[mode] || ".txt";
+                const currentFilename = saveFilenameEl.value;
+                if (currentFilename.startsWith('editpad-') || currentFilename === '' || currentFilename.endsWith('.txt')) {
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
+                    saveFilenameEl.value = `editpad-${timestamp}${extension}`;
+                } else if (!currentFilename.includes('.')) {
+                    saveFilenameEl.value = `${currentFilename}${extension}`;
+                }
+            }
+
+            // --- Settings Modal Logic ---
+            function toggleSettings() {
+                settingsContainer.classList.toggle("show");
+                overlay.classList.toggle("show");
+            }
+
+            // --- Settings Persistence ---
+            function applyAndSaveSetting(key, value, applyFn) {
+                try {
+                    applyFn(value);
+                    saveSettings();
+                } catch (error) {
+                    console.error(`Error applying setting ${key}:`, error);
+                }
+            }
+
+            function saveSettings() {
+                if (!cmEditor) return;
+                const settings = {
+                    statsVisible: toggleStatsEl.checked,
+                    language: languageSelectEl.value,
+                    bgColorOverride: bgColorEl.value,
+                    textColorOverride: textColorEl.value,
+                    fontFamily: fontFamilyEl.value,
+                    fontSize: fontSizeEl.value,
+                    lineSpacing: lineSpacingEl.value,
+                };
+                try {
+                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                } catch (error) {
+                    console.error("Error saving settings to localStorage:", error);
+                }
+            }
+
+            function loadAndApplySettings() {
+                let loadedSettings = {};
+                try {
+                    const savedSettings = localStorage.getItem(SETTINGS_KEY);
+                    if (savedSettings) {
+                        loadedSettings = JSON.parse(savedSettings);
+                    }
+                } catch (error) {
+                    console.error("Error loading settings from localStorage:", error);
+                }
+
+                // Initialize CodeMirror
+                cmEditor = CodeMirror.fromTextArea(editorTextarea, {
+                    mode: loadedSettings.language || 'null',
+                    theme: "material-darker",
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    indentUnit: 4,
+                    tabSize: 4,
+                    autoCloseTags: true,
+                    matchBrackets: true,
+                });
+                const cmWrapper = cmEditor.getWrapperElement();
+
+                // Apply Settings to UI Controls and CM instance
+                toggleStatsEl.checked = loadedSettings.statsVisible ?? true;
+                statsContainer.classList.toggle('hidden', !toggleStatsEl.checked);
+
+                languageSelectEl.value = loadedSettings.language || 'null';
+                updateFilenameHint(languageSelectEl.value);
+
+                bgColorEl.value = loadedSettings.bgColorOverride || '#252526';
+                if (bgColorEl.value !== '#252526') cmWrapper.style.backgroundColor = bgColorEl.value;
+
+                textColorEl.value = loadedSettings.textColorOverride || '#d4d4d4';
+                if (textColorEl.value !== '#d4d4d4') cmWrapper.style.color = textColorEl.value;
+
+                fontFamilyEl.value = loadedSettings.fontFamily || "'Fira Code', monospace";
+                cmWrapper.style.fontFamily = fontFamilyEl.value;
+
+                fontSizeEl.value = loadedSettings.fontSize || '16';
+                cmWrapper.style.fontSize = `${fontSizeEl.value}px`;
+
+                lineSpacingEl.value = loadedSettings.lineSpacing || '1.6';
+                cmWrapper.style.lineHeight = lineSpacingEl.value;
+
+                // Final Setup after load
+                cmEditor.on('change', updateStats);
+                cmEditor.refresh();
+                updateStats();
+            }
+
+            // --- Event Listeners Setup ---
+            replaceAllBtn.addEventListener('click', replaceAllText);
+            saveFileBtn.addEventListener('click', saveFile);
+            settingsBtn.addEventListener('click', toggleSettings);
+            closeSettingsBtn.addEventListener('click', toggleSettings);
+            overlay.addEventListener('click', toggleSettings);
+            languageSelectEl.addEventListener("change", () => {
+                applyAndSaveSetting('language', languageSelectEl.value, changeLanguage);
+            });
+
+            // Settings Change Listeners
+            toggleStatsEl.addEventListener("change", function() {
+                applyAndSaveSetting('statsVisible', this.checked, (val) => {
+                    statsContainer.classList.toggle('hidden', !val);
+                });
+            });
+            bgColorEl.addEventListener("input", function() {
+                applyAndSaveSetting('bgColorOverride', this.value, (val) => {
+                    cmEditor.getWrapperElement().style.backgroundColor = val;
+                });
+            });
+            textColorEl.addEventListener("input", function() {
+                applyAndSaveSetting('textColorOverride', this.value, (val) => {
+                    cmEditor.getWrapperElement().style.color = val;
+                });
+            });
+            fontFamilyEl.addEventListener("change", function() {
+                applyAndSaveSetting('fontFamily', this.value, (val) => {
+                    cmEditor.getWrapperElement().style.fontFamily = val;
+                    cmEditor.refresh();
+                });
+            });
+            fontSizeEl.addEventListener("input", function() {
+                applyAndSaveSetting('fontSize', this.value, (val) => {
+                    const size = Math.max(8, Math.min(48, parseInt(val) || 16));
+                    cmEditor.getWrapperElement().style.fontSize = `${size}px`;
+                    cmEditor.refresh();
+                });
+            });
+            fontSizeEl.addEventListener("change", saveSettings); // Save on blur
+            lineSpacingEl.addEventListener("input", function() {
+                applyAndSaveSetting('lineSpacing', this.value, (val) => {
+                    const spacing = Math.max(1, Math.min(3, parseFloat(val) || 1.6));
+                    cmEditor.getWrapperElement().style.lineHeight = spacing;
+                    cmEditor.refresh();
+                });
+            });
+            lineSpacingEl.addEventListener("change", saveSettings); // Save on blur
+
+            // Keyboard Shortcuts
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && settingsContainer.classList.contains('show')) {
+                    toggleSettings();
+                }
+                if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                    event.preventDefault();
+                    saveFile();
+                }
+            });
+
+            // --- Initialization ---
+            loadAndApplySettings();
+            console.log("EditPad Pro Initialized");
         });
-
     </script>
-
 </body>
 </html>
