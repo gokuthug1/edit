@@ -3,681 +3,807 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A fast, feature-rich, and customizable in-browser code and text editor built with CodeMirror.">
+    <meta name="description" content="A fast, dependency-free code editor built from scratch.">
     <title>EditPad Pro</title>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&family=Lato&family=Montserrat&family=Open+Sans&family=Poppins&family=Roboto&family=Source+Code+Pro&display=swap" rel="stylesheet">
-
-    <!-- CodeMirror Core CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- CodeMirror Theme CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" integrity="sha512-2OhXH4Il3n2tHKwLLSDPhrkgnLBC+6lHGGQzSFi3chgVB6DJ/v6+nbx+XYO9CugQyHVF/8D/0k3Hx1eaUK2K9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
     <style>
+        /* --- CSS Variables & Theme --- */
         :root {
-            --bg-color-main: #1e1e1e;
-            --bg-color-editor: #252526;
-            --bg-color-ui: #2d2d30;
-            --text-color-main: #d4d4d4;
-            --accent-color: #007acc;
-            --accent-color-hover: #0095ff;
-            --border-color: #3f3f46;
-            --border-radius-main: 8px;
-            --border-radius-small: 5px;
-            --box-shadow-main: 0 4px 12px rgba(0, 0, 0, 0.5);
-            --box-shadow-modal: 0 6px 20px rgba(0, 0, 0, 0.7);
+            /* Base Colors (Zinc/Modern Dark) */
+            --bg-body: #09090b; 
+            --bg-editor: #18181b; 
+            --bg-ui: #18181b; 
+            --bg-hover: #27272a; 
+            --border: #27272a; 
+            --border-focus: #3f3f46;
+            
+            /* Text & Accents */
+            --text-main: #e4e4e7; 
+            --text-muted: #a1a1aa; 
+            --accent: #0ea5e9; 
+            --accent-hover: #38bdf8; 
+            --accent-bg: rgba(14, 165, 233, 0.15);
+            --caret: #0ea5e9;
+            --selection: rgba(14, 165, 233, 0.3);
+
+            /* Typography */
+            --font-ui: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-code: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            --font-size: 14px;
+            --line-height: 1.6;
+
+            /* Effects */
+            --radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        *, *::before, *::after {
-            box-sizing: border-box;
+        body.light-mode {
+            --bg-body: #e4e4e7;
+            --bg-editor: #ffffff; 
+            --bg-ui: #f8f8f8;
+            --bg-hover: #e4e4e7;
+            --border: #d4d4d8; 
+            --border-focus: #a1a1aa;
+            
+            --text-main: #18181b; 
+            --text-muted: #52525b; 
+            --accent: #0284c7; 
+            --accent-hover: #0369a1;
+            --accent-bg: rgba(2, 132, 199, 0.15);
+            
+            --caret: #0284c7;
+            --selection: rgba(2, 132, 199, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
+        /* --- Global Reset --- */
+        * { box-sizing: border-box; }
+        
         body {
-            font-family: 'Lato', 'Open Sans', Arial, sans-serif;
-            background: var(--bg-color-main);
-            color: var(--text-color-main);
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
-        }
-
-        h1 {
-            color: var(--text-color-main);
-            margin-bottom: 20px;
-            font-weight: 300;
-            letter-spacing: 1px;
-        }
-
-        .editor-container {
-            width: 90%;
-            max-width: 1000px;
-            border-radius: var(--border-radius-main);
-            box-shadow: var(--box-shadow-main);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-ui);
             overflow: hidden;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            background: var(--bg-color-editor); /* Prevent flash of unstyled content */
+            transition: background-color 0.2s, color 0.2s;
         }
 
-        /* CodeMirror Styling */
-        .CodeMirror {
-            font-family: 'Fira Code', 'Source Code Pro', monospace;
-            height: 55vh;
-            min-height: 350px;
-            width: 100%;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        textarea#editor {
-            display: none;
-        }
-
-        /* Controls Styling */
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            width: 90%;
-            max-width: 1000px;
-            margin-bottom: 15px;
-            gap: 15px;
-        }
-
-        .controls .control-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .controls .input-group, .controls .save-group { flex-grow: 1; min-width: 220px; }
-        .controls .language-group, .controls .action-buttons { flex-shrink: 0; }
-        .language-group > label {
-            white-space: nowrap;
-            font-size: 14px;
-            color: #ccc;
-        }
-
-        /* Input/Select/Button styling */
-        .controls input[type="text"], .controls select {
-            padding: 9px 12px;
-            border: 1px solid var(--border-color);
-            background-color: var(--bg-color-main);
-            color: var(--text-color-main);
-            border-radius: var(--border-radius-small);
-            font-size: 14px;
-            transition: border-color 0.2s ease, background-color 0.2s ease;
-        }
-        .controls input[type="text"] { flex: 1; }
-        .controls select { cursor: pointer; }
-        .controls input#saveFilename { flex-grow: 0; flex-shrink: 1; width: 200px; min-width: 150px; }
-        .controls input[type="text"]:focus, .controls select:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-
-        button {
-            padding: 9px 16px;
-            border: none;
-            border-radius: var(--border-radius-small);
-            font-size: 14px;
-            cursor: pointer;
-            background: var(--accent-color);
-            color: white;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            white-space: nowrap;
-        }
-        button:hover { background: var(--accent-color-hover); }
-        button:focus-visible { outline: 2px solid var(--accent-color-hover); outline-offset: 2px; }
-        button:active { transform: scale(0.98); }
-
-
-        /* Stats Container Styling */
-        .stats-container {
-            display: flex;
-            justify-content: space-between;
-            width: 90%;
-            max-width: 1000px;
-            margin-top: 10px;
-            font-size: 13px;
-            padding: 10px 15px;
-            background: var(--bg-color-ui);
-            border-radius: var(--border-radius-small);
-            color: #aaa;
-            transition: opacity 0.3s ease, height 0.3s ease, padding 0.3s ease, margin 0.3s ease, transform 0.3s ease;
-            flex-wrap: wrap;
-            gap: 15px;
-            height: auto;
-            transform: scaleY(1);
-            transform-origin: top;
-        }
-        .stats-container.hidden {
-            opacity: 0;
-            height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            border: none;
-            overflow: hidden;
-            margin-top: 0;
-            transform: scaleY(0);
-        }
-        .stats-container span { white-space: nowrap; }
-
-        /* Settings Modal CSS */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .app-container {
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-editor);
+            position: relative;
         }
-        .overlay.show { opacity: 1; visibility: visible; }
 
-        .settings-container {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            background: var(--bg-color-ui);
-            padding: 25px 30px;
-            border-radius: var(--border-radius-main);
-            box-shadow: var(--box-shadow-modal);
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
-            width: 90%;
-            max-width: 420px;
-            color: var(--text-color-main);
+        /* --- Scrollbars --- */
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-corner { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(150, 150, 150, 0.2);
+            border-radius: 6px;
+            border: 3px solid var(--bg-editor);
         }
-        .settings-container.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+        ::-webkit-scrollbar-thumb:hover { background-color: rgba(150, 150, 150, 0.4); }
 
-        .settings-container h2 { margin-top: 0; margin-bottom: 25px; text-align: center; color: var(--text-color-main); font-weight: 400; }
-        .settings-container .setting { margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
-        .settings-container input[type="checkbox"] { margin-right: 8px; accent-color: var(--accent-color); width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
-        .settings-container .setting span { flex-grow: 1; margin-right: 10px; }
-        .settings-container input[type="color"] { margin-left: 10px; border: none; background: none; height: 30px; width: 45px; padding: 0; cursor: pointer; flex-shrink: 0; }
-        .settings-container input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        .settings-container input[type="color"]::-webkit-color-swatch { border: 1px solid #555; border-radius: 4px; }
-        .settings-container input[type="color"]::-moz-color-swatch { border: 1px solid #555; border-radius: 4px; }
-        .settings-container select, .settings-container input[type="number"] {
-            padding: 6px 10px;
-            border-radius: var(--border-radius-small);
-            border: 1px solid var(--border-color);
-            background-color: var(--bg-color-main);
-            color: var(--text-color-main);
-            margin-left: 10px;
-            flex-shrink: 0;
+        /* --- Header / Toolbar --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 48px;
+            padding: 0 16px;
+            background: var(--bg-ui);
+            border-bottom: 1px solid var(--border);
+            user-select: none;
+            z-index: 10;
         }
-        .settings-container select { min-width: 140px; }
-        .settings-container input[type="number"] { width: 70px; }
-        .settings-container .settings-actions { text-align: right; margin-top: 30px; }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 12px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color-ui); }
-        ::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; border: 3px solid var(--bg-color-ui); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color-hover); }
-        * { scrollbar-width: thin; scrollbar-color: var(--accent-color) var(--bg-color-ui); }
+        .header-left, .header-right { display: flex; align-items: center; gap: 6px; flex: 1; }
+        .header-right { justify-content: flex-end; }
+        .header-center { display: flex; justify-content: center; flex: 1; }
 
-
-        /* Responsive Adjustments */
-        @media (max-width: 820px) {
-             .controls { flex-direction: column; align-items: stretch; }
-             .controls .control-group { width: 100%; justify-content: center; }
-             .controls .input-group { flex-direction: column; gap: 8px; }
-             .controls .save-group { justify-content: space-between; }
-             .controls .action-buttons { justify-content: space-around; }
-             .controls .action-buttons button { flex-grow: 1; margin: 0 5px; }
+        .brand {
+            display: flex; align-items: center; gap: 8px; margin-right: 12px;
+            font-weight: 600; font-size: 13px; color: var(--text-main); letter-spacing: -0.3px;
         }
-        @media (max-width: 480px) {
-             body { padding: 10px; }
-             .editor-container, .controls, .stats-container { width: 98%; }
-             h1 { font-size: 1.8em; }
-             .settings-container { width: 95%; padding: 20px 15px; }
-             .settings-container .setting { flex-wrap: wrap; }
-             .stats-container { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+        /* Inputs & Buttons */
+        .filename-input {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            width: 220px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            outline: none;
+            transition: var(--transition);
         }
+        .filename-input:hover { background: var(--bg-hover); }
+        .filename-input:focus {
+            background: var(--bg-editor);
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px var(--accent-bg);
+        }
+
+        .icon-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border: none; background: transparent;
+            color: var(--text-muted); border-radius: 6px; cursor: pointer;
+            transition: var(--transition);
+        }
+        .icon-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+        
+        .text-btn {
+            padding: 6px 12px; font-size: 13px; font-weight: 500; border-radius: 6px;
+            background: transparent; color: var(--text-main); border: 1px solid var(--border);
+            cursor: pointer; transition: var(--transition);
+        }
+        .text-btn:hover { background: var(--bg-hover); }
+
+        .lang-select {
+            background: transparent; border: 1px solid transparent; color: var(--text-muted);
+            font-size: 13px; font-weight: 500; padding: 4px 8px; border-radius: 6px;
+            outline: none; cursor: pointer; transition: var(--transition);
+        }
+        .lang-select:hover { background: var(--bg-hover); color: var(--text-main); }
+        .lang-select:focus { border-color: var(--border-focus); background: var(--bg-editor); }
+
+        /* --- Workspace & Editor --- */
+        .workspace {
+            position: relative;
+            flex: 1; display: flex; flex-direction: column;
+            overflow: hidden; background: var(--bg-editor);
+        }
+
+        .editor-container { position: relative; flex: 1; overflow: hidden; }
+
+        .editor-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            margin: 0; padding: 24px; border: none;
+            font-family: var(--font-code); font-size: var(--font-size); line-height: var(--line-height);
+            tab-size: 4; white-space: pre; overflow: auto; outline: none;
+            background: transparent; -webkit-font-smoothing: antialiased;
+        }
+
+        #highlighting { z-index: 1; color: var(--text-main); pointer-events: none; padding-bottom: 50px;}
+        #highlighting::-webkit-scrollbar { display: none; }
+        #highlighting { scrollbar-width: none; }
+        
+        #editing { z-index: 2; color: transparent; caret-color: var(--caret); resize: none; }
+        #editing::selection { background: var(--selection); color: transparent; }
+
+        /* --- Find Bar --- */
+        .find-bar-container {
+            position: absolute; top: 12px; right: 24px; z-index: 20;
+            transform: translateY(-15px); opacity: 0; pointer-events: none;
+            transition: var(--transition);
+        }
+        .find-bar-container.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        
+        .find-bar {
+            display: flex; align-items: center; gap: 8px; padding: 8px;
+            background: var(--bg-ui); border: 1px solid var(--border);
+            border-radius: 8px; box-shadow: var(--shadow-lg);
+        }
+        
+        .find-input-group { position: relative; display: flex; align-items: center; }
+        .find-input-group .input-icon { position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
+        
+        .find-input {
+            background: var(--bg-hover); border: 1px solid transparent; color: var(--text-main);
+            padding: 6px 10px 6px 32px; border-radius: 6px; font-size: 13px; width: 150px; outline: none; transition: var(--transition);
+        }
+        .find-input:focus { background: var(--bg-editor); border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--accent-bg); }
+        .divider { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+
+        /* --- Status Bar --- */
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 32px; padding: 0 16px; background: var(--bg-ui);
+            border-top: 1px solid var(--border); font-size: 12px; font-weight: 500;
+            color: var(--text-muted); user-select: none; letter-spacing: 0.2px; z-index: 10;
+        }
+        .status-bar > div { display: flex; gap: 20px; }
+
+        /* --- Settings Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 100;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal {
+            background: var(--bg-ui); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; width: 360px; box-shadow: var(--shadow-lg);
+            transform: scale(0.95); opacity: 0; transition: var(--transition);
+        }
+        .modal-overlay.active .modal { transform: scale(1); opacity: 1; }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); }
+        
+        .settings-group { display: flex; flex-direction: column; gap: 16px; }
+        .modal-row { display: flex; justify-content: space-between; align-items: center; }
+        .modal-row label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+
+        .styled-select, .styled-input {
+            background: var(--bg-hover); border: 1px solid transparent; color: var(--text-main);
+            padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none; transition: var(--transition); width: 150px;
+        }
+        .styled-select:focus, .styled-input:focus { background: var(--bg-editor); border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--accent-bg); }
+
+        .color-picker-wrap { display: flex; align-items: center; }
+        .styled-color {
+            appearance: none; -webkit-appearance: none; width: 28px; height: 28px;
+            border: none; padding: 0; border-radius: 6px; cursor: pointer; background: transparent;
+        }
+        .styled-color::-webkit-color-swatch-wrapper { padding: 0; }
+        .styled-color::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 6px; }
+
+        /* --- Syntax Colors (Premium Theme) --- */
+        .token.comment { color: #71717a; font-style: italic; }
+        .token.string { color: #a5d6ff; }
+        .token.number { color: #d19a66; }
+        .token.keyword { color: #ff7b72; font-weight: 500; }
+        .token.function { color: #d2a8ff; }
+        .token.operator { color: #8b949e; }
+        .token.class-name { color: #7ee787; }
+        .token.boolean { color: #79c0ff; }
+        .token.punctuation { color: #8b949e; }
+        .token.property, .token.attr-name { color: #79c0ff; }
+        .token.tag { color: #7ee787; }
+        .token.attr-value { color: #a5d6ff; }
+        .token.selector { color: #d2a8ff; }
+
+        /* Light Mode Syntax Overrides */
+        body.light-mode .token.comment { color: #6e7781; }
+        body.light-mode .token.string { color: #0a3069; }
+        body.light-mode .token.number { color: #0550ae; }
+        body.light-mode .token.keyword { color: #cf222e; }
+        body.light-mode .token.function { color: #8250df; }
+        body.light-mode .token.operator { color: #24292f; }
+        body.light-mode .token.class-name { color: #116329; }
+        body.light-mode .token.boolean { color: #0550ae; }
+        body.light-mode .token.punctuation { color: #57606a; }
+        body.light-mode .token.property, body.light-mode .token.attr-name { color: #0550ae; }
+        body.light-mode .token.tag { color: #116329; }
+        body.light-mode .token.attr-value { color: #0a3069; }
+        body.light-mode .token.selector { color: #8250df; }
     </style>
 </head>
 <body>
 
-    <h1>EditPad Pro</h1>
+    <div class="app-container">
+        <!-- Header / Toolbar -->
+        <header class="header">
+            <div class="header-left">
+                <div class="brand">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    <span>EditPad Pro</span>
+                </div>
+                <button id="btnOpen" class="icon-btn" title="Open File (Ctrl+O)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+                <input type="file" id="fileInput" style="display:none">
+                
+                <button id="btnSave" class="icon-btn" title="Save File (Ctrl+S)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                </button>
+            </div>
 
-    <div class="editor-container" id="editorContainer">
-        <textarea id="editor" spellcheck="false"></textarea>
+            <div class="header-center">
+                <input type="text" id="filenameInput" class="filename-input" placeholder="untitled.txt" spellcheck="false">
+            </div>
+
+            <div class="header-right">
+                <select id="langSelect" class="lang-select" title="Language Mode">
+                    <option value="plaintext">Plain Text</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="python">Python</option>
+                    <option value="json">JSON</option>
+                    <option value="sql">SQL</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="lua">Lua</option>
+                    <option value="cpp">C++</option>
+                    <option value="bash">Bash</option>
+                </select>
+                <button id="btnFind" class="icon-btn" title="Find & Replace (Ctrl+F)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+                <button id="btnSettings" class="icon-btn" title="Settings">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Floating Find Bar -->
+            <div class="find-bar-container" id="findBar">
+                <div class="find-bar">
+                    <div class="find-input-group">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="findInput" placeholder="Find..." class="find-input">
+                    </div>
+                    <div class="find-input-group">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                        <input type="text" id="replaceInput" placeholder="Replace" class="find-input">
+                    </div>
+                    <button id="btnFindNext" class="icon-btn" title="Next Occurrence">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                    </button>
+                    <div class="divider"></div>
+                    <button id="btnReplace" class="text-btn">Replace</button>
+                    <button id="btnReplaceAll" class="text-btn">All</button>
+                    <div class="divider"></div>
+                    <button id="btnCloseFind" class="icon-btn" title="Close">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor Container -->
+            <div class="editor-container" id="editorContainer">
+                <pre id="highlighting" class="editor-layer" aria-hidden="true"></pre>
+                <textarea id="editing" class="editor-layer" spellcheck="false" nowrap></textarea>
+            </div>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="stats">Ln 1, Col 1</span>
+            </div>
+            <div class="status-right">
+                <span id="charCount">0 chars</span>
+                <span id="fileInfo">UTF-8</span>
+            </div>
+        </footer>
+
+        <!-- Settings Modal -->
+        <div class="modal-overlay" id="settingsModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Editor Settings</h3>
+                    <button id="btnCloseSettings" class="icon-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                
+                <div class="settings-group">
+                    <div class="modal-row">
+                        <label>Theme Preset</label>
+                        <select id="themeSelect" class="styled-select">
+                            <option value="dark">Dark Theme</option>
+                            <option value="light">Light Theme</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Editor Background</label>
+                        <div class="color-picker-wrap">
+                            <input type="color" id="bgColorInput" value="#18181b" class="styled-color">
+                        </div>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Text Color</label>
+                        <div class="color-picker-wrap">
+                            <input type="color" id="textColorInput" value="#e4e4e7" class="styled-color">
+                        </div>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Font Family</label>
+                        <select id="fontSelect" class="styled-select" style="width: 160px;">
+                            <option value='"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace'>System Monospace</option>
+                            <option value='"Fira Code", monospace'>Fira Code</option>
+                            <option value='"Consolas", "Monaco", monospace'>Consolas / Monaco</option>
+                            <option value='"Courier New", monospace'>Courier New</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Font Size</label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="number" id="fontSizeInput" value="14" min="8" max="48" class="styled-input" style="width: 70px;">
+                            <span style="color: var(--text-muted); font-size: 12px;">px</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Line Spacing</label>
+                        <input type="number" id="lineHeightInput" value="1.6" step="0.1" min="1.0" max="3.0" class="styled-input" style="width: 70px;">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="controls">
-        <div class="control-group language-group">
-            <label for="languageSelect">Language:</label>
-            <select id="languageSelect" title="Select Syntax Highlighting">
-                 <option value="null">Plain Text</option>
-                 <option value="htmlmixed">HTML</option>
-                 <option value="css">CSS</option>
-                 <option value="javascript">JavaScript</option>
-                 <option value="markdown">Markdown</option>
-                 <option value="xml">XML</option>
-                 <option value="python">Python</option>
-                 <option value="lua">Lua</option>
-                 <option value="php">PHP</option>
-                 <option value="sql">SQL</option>
-            </select>
-        </div>
-
-        <div class="control-group input-group">
-            <input type="text" id="findText" placeholder="Find text (supports Regex)...">
-            <input type="text" id="replaceWithText" placeholder="Replace with...">
-             <button id="replaceAllBtn" title="Replace All Occurrences">Replace All</button>
-        </div>
-
-        <div class="control-group save-group">
-             <input type="text" id="saveFilename" placeholder="filename.ext" title="Enter desired filename with extension">
-             <button id="saveFileBtn" title="Download text as file">Save File</button>
-        </div>
-
-        <div class="control-group action-buttons">
-             <button id="settingsBtn" title="Customize appearance">Settings</button>
-        </div>
-    </div>
-
-    <div class="stats-container" id="statsContainer">
-        <span id="wordCount" aria-live="polite">Words: 0</span>
-        <span id="charCount" aria-live="polite">Characters: 0 (0 B)</span>
-    </div>
-
-    <!-- Modal and Overlay -->
-    <div class="overlay" id="overlay"></div>
-    <div class="settings-container" id="settingsContainer">
-        <h2>Settings</h2>
-
-        <div class="setting">
-             <span>Show Stats Bar</span>
-             <input type="checkbox" id="toggleStats">
-        </div>
-        <div class="setting">
-            <span>Editor BG Color</span>
-            <input type="color" id="bgColor" title="Overrides theme background">
-        </div>
-        <div class="setting">
-            <span>Text Color</span>
-            <input type="color" id="textColor" title="Overrides theme default text color">
-        </div>
-        <div class="setting">
-             <span>Font Family</span>
-             <select id="fontFamily">
-                 <option value="'Fira Code', monospace">Fira Code</option>
-                 <option value="'Source Code Pro', monospace">Source Code Pro</option>
-                 <option value="'Courier New', monospace">Courier New</option>
-                 <option value="'Lucida Console', monospace">Lucida Console</option>
-                 <option value="'Roboto', sans-serif">Roboto</option>
-                 <option value="'Open Sans', sans-serif">Open Sans</option>
-                 <option value="'Lato', sans-serif">Lato</option>
-                 <option value="Arial, sans-serif">Arial</option>
-                 <option value="Verdana, sans-serif">Verdana</option>
-                 <option value="'Times New Roman', Times, serif">Times New Roman</option>
-             </select>
-        </div>
-        <div class="setting">
-            <span>Font Size (px)</span>
-            <input type="number" id="fontSize" min="8" max="48" value="16">
-        </div>
-        <div class="setting">
-            <span>Line Spacing</span>
-            <input type="number" id="lineSpacing" min="1" max="3" step="0.1" value="1.6">
-        </div>
-
-        <div class="settings-actions">
-            <button id="closeSettingsBtn">Close</button>
-        </div>
-    </div>
-
-    <!-- CodeMirror JS Assets -->
-    <!-- Core -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js" integrity="sha512-OeZ4Yrb/W7d2W4rAMOO0HQ9Ro/aWLtpW9BUSR2UOWnSV2hprXLkkYnnCGc9NeLUxxE4ZG7zN16UuT1Elqq8Opg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Modes -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js" integrity="sha512-LarNmzVokUmcA7aUDtqZ6oTS+YXmUKzpGdm8DxC46A6AHu+PQiYCUlwEGWidjVYMo/QXZMFMIadZtrkfApYp/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js" integrity="sha512-Cbz+kvn+l5pi5HfXsEB/FYgZVKjGIhOgYNBwj4W2IHP2y8r3AdyDCQRnEUqIQ+6aJjygKPTyaNT2eIihaykJlw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js" integrity="sha512-rQImvJlBa8MV1Tl1SXR5zD2bWfmgCEIzTieFegGg89AAt7j/NBEe50M5CqYQJnRwtkjKMmuYgHBqtD1Ubbk5ww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js" integrity="sha512-HN6cn6mIWeFJFwRN9yetDAMSh+AK9myHF1X9GlSlKmThaat65342Yw8wL7ITuaJnPioG0SYG09gy0qd5+s777w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js" integrity="sha512-Vs2GKxnxnTQBRW7o2xXZ9A28njjmu5RToS42efiKNEWmikov0inZY522EtGVK5CcVo0M/FQwmXsTfl9skgRnvw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- FIX: Added missing scripts for Lua, Markdown, SQL, PHP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js" integrity="sha512-MXR/wu8WxkFikybMYGuaR9O0SgRrcSReZUNuherC0XZ7SJN/db3W+qQCh+4rAiBBeNk/yd/NdnQd/s2nO4q4fA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js" integrity="sha512-DmMao0nRIbyDjbaHc8fNd3kxGsZj9PCU6Iu/CeidLQT9Py8nYVA5n0PqXYmvqNdU+lCiTHOM/4E7bM/G8BttJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js" integrity="sha512-TZji/E4or1ciET62zt9IgnfFJPkMqV4EhZ8AfiRVZeq+yxCT5O+PomM7nkfttOwX/ckDwjPzevAUhKvXnHl7MA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js" integrity="sha512-jZGz5n9AVTuQGhKTL0QzOm6bxxIQjaSbins+vD3OIdI7mtnmYE6h/L+UBGIp/SssLggbkxRzp9XkQNA4AyjFBw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <!-- Addons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js" integrity="sha512-XYx5xhl4B5vKNlaRBWh/nlti0+IPM6eT+dSFc3/oc4rERn2DpwbS3q4OblprqqBLXyRSVePKmf+8mHkDLtGZpg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js" integrity="sha512-GSYCbN/le5gNmfAWVEjg1tKnOH7ilK6xCLgA7c48IReoIR2g2vldxTM6kZlN6o3VtWIe6fHu/qhwxIt11J8EBA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
 
     <script>
+        /**
+         * SYNTAX HIGHLIGHTER ENGINE
+         * Dependency-free regex lexer.
+         */
+        const SyntaxHighlighter = {
+            GRAMMAR: {
+                json: {
+                    'string': /"(?:\\.|[^"\\])*"(?=\s*:)/, 
+                    'string value': /"(?:\\.|[^"\\])*"/,    
+                    'boolean': /\b(?:true|false|null)\b/,
+                    'number': /\b-?\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/i,
+                    'operator': /:/,
+                    'punctuation': /[{}[\](),]/,
+                },
+                javascript: {
+                    'comment': /(\/\/.*)|(\/\*[\s\S]*?\*\/)/,
+                    'string': /(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/,
+                    'keyword': /\b(?:const|let|var|if|else|for|while|do|async|await|function|return|new|import|export|from|class|extends|super|this|switch|case|default|break|continue|try|catch|finally|throw|delete|typeof|instanceof|void)\b/,
+                    'boolean': /\b(?:true|false|null|undefined)\b/,
+                    'function': /\b[a-z_][A-Za-z0-9_]*(?=\s*\()/i,
+                    'number': /\b-?\d+(?:\.\d+)?\b/,
+                    'class-name': /\b[A-Z][A-Za-z0-9_]+\b/,
+                    'operator': /=>|\.\.\.|[|&^!~*\/%<>=+-]=?|&&|\|\||\?/,
+                    'punctuation': /[{}[\]();,.:]/,
+                },
+                python: {
+                    'comment': /#.*/,
+                    'string': /(?:'''[\s\S]*?'''|"""[\s\S]*?"""|'(?:\\'|[^'])*'|"(?:\\"|[^"])*")/,
+                    'keyword': /\b(?:def|class|if|else|elif|for|while|return|import|from|as|try|except|finally|with|lambda|and|or|not|is|in|pass|break|continue|global|nonlocal)\b/,
+                    'function': /\b[a-z_][A-Za-z0-9_]*(?=\s*\()/i,
+                    'boolean': /\b(?:True|False|None)\b/,
+                    'number': /\b-?\d+(?:\.\d+)?\b/,
+                    'operator': /([*\/%+\-&|~^<>=!]=?|[*\/]=|\/\/|@)/,
+                    'punctuation': /[{}[\]();,.:]/,
+                },
+                lua: {
+                    'comment': /--.*|--\[\[[\s\S]*?\]\]/,
+                    'string': /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\[\[[\s\S]*?\]\]/,
+                    'keyword': /\b(?:function|end|if|then|else|elseif|for|while|do|return|local|and|or|not|break|repeat|until|in)\b/,
+                    'function': /\b[a-z_][A-Za-z0-9_]*(?=\s*\()/,
+                    'boolean': /\b(?:true|false|nil)\b/,
+                    'number': /\b-?\d+(?:\.\d+)?\b/,
+                    'operator': /[+\-%*\/#^=~]=?|~=|[<>]=?|\.\.\.?/,
+                    'punctuation': /[{}[\]();,.:]/,
+                },
+                html: {
+                    'comment': /<!--[\s\S]*?-->/,
+                    'doctype': /<!DOCTYPE[\s\S]+?>/i,
+                    'tag': /<\/?[\w:-]+\b/, 
+                    'attr-value': /("|')(?:\\\1|.)*?\1/,
+                    'attr-name': /[\w:-]+(?=\s*=\s*["'])/, 
+                    'punctuation': /\/?>|=/
+                },
+                css: {
+                    'comment': /\/\*[\s\S]*?\*\//,
+                    'selector': /[^{}\s][^{}]*(?=\s*\{)/,
+                    'property': /[\w-]+(?=\s*:)/,
+                    'string': /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/,
+                    'function': /\b(?:rgb|rgba|url|calc|var|min|max|clamp)\b/,
+                    'number': /\b-?\d+(?:\.\d+)?(?:px|em|rem|%|vw|vh|deg|s|ms)?\b/,
+                },
+                bash: {
+                    'comment': /#.*/,
+                    'string': /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/,
+                    'keyword': /\b(?:if|then|else|elif|fi|for|while|in|do|done|case|esac|function|return|exit|echo|printf|read|source|export|local)\b/,
+                    'variable': /\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[^}]+\}/,
+                    'function': /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\(\))/,
+                    'operator': /&&|\|\||;;|\||&|>|<|!/,
+                    'number': /\b\d+\b/
+                },
+                sql: {
+                    'comment': /--.*|\/\*[\s\S]*?\*\//,
+                    'string': /'(?:''|[^'])*'/,
+                    'keyword': /\b(?:SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|JOIN|INNER|OUTER|LEFT|RIGHT|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|UNION|ALL|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END|IS|NULL|AND|OR|NOT|IN|EXISTS|LIKE|VALUES|SET|PRIMARY|KEY|FOREIGN|REFERENCES)\b/i,
+                    'function': /\b(?:COUNT|SUM|AVG|MIN|MAX|NOW|DATE|CONCAT)\b/i,
+                    'number': /\b-?\d+(?:\.\d+)?\b/,
+                    'operator': /[=<>!]+/,
+                    'punctuation': /[();,.]/
+                },
+                cpp: {
+                    'comment': /(\/\/.*)|(\/\*[\s\S]*?\*\/)/,
+                    'string': /"(?:\\"|[^"])*"/,
+                    'keyword': /\b(?:int|float|double|char|void|if|else|for|while|do|switch|case|default|break|continue|return|struct|class|public|private|protected|static|const|virtual|override|new|delete|using|namespace|include|template|typename|bool|auto)\b/,
+                    'boolean': /\b(?:true|false)\b/,
+                    'number': /\b-?\d+(?:\.\d+)?\b/,
+                    'operator': /[+\-*\/%&|^!~=<>]+/,
+                    'punctuation': /[{}[\]();,.:]/,
+                },
+                markdown: {
+                    'comment': /<!--[\s\S]*?-->/,
+                    'variable': /\[.*?\]\(.*?\)|!\[.*?\]\(.*?\)/, 
+                    'keyword': /^#{1,6}.*$/m, 
+                    'string': /`[^`]+`/, 
+                    'function': /\*\*.*?\*\*|__.*?__/, 
+                    'operator': /\*.*?\*|_.*?_/, 
+                    'punctuation': /^[*\-+]\s|\d+\.\s/m 
+                }
+            },
+
+            highlight(code, lang) {
+                if (!code) return '';
+                if (!lang || lang === 'plaintext') return this.escapeHtml(code);
+                
+                const alias = { 'xml': 'html', 'svg': 'html', 'sh': 'bash', 'js': 'javascript', 'ts': 'javascript', 'c': 'cpp', 'c++': 'cpp', 'yml': 'json' };
+                const effectiveLang = (alias[lang.toLowerCase()] || lang).toLowerCase();
+
+                if (effectiveLang === 'html') {
+                    return this.highlightHtml(code);
+                }
+                return this._highlightBasic(code, effectiveLang);
+            },
+
+            highlightHtml(code) {
+                const regex = /(<script[\s\S]*?>)([\s\S]*?)(<\/script>)|(<style[\s\S]*?>)([\s\S]*?)(<\/style>)/gi;
+                let lastIndex = 0;
+                let result = '';
+                let match;
+
+                while ((match = regex.exec(code)) !== null) {
+                    result += this._highlightBasic(code.slice(lastIndex, match.index), 'html');
+                    if (match[1]) {
+                        result += this._highlightBasic(match[1], 'html');
+                        result += this._highlightBasic(match[2], 'javascript');
+                        result += this._highlightBasic(match[3], 'html');
+                    } else if (match[4]) {
+                        result += this._highlightBasic(match[4], 'html');
+                        result += this._highlightBasic(match[5], 'css');
+                        result += this._highlightBasic(match[6], 'html');
+                    }
+                    lastIndex = regex.lastIndex;
+                }
+                result += this._highlightBasic(code.slice(lastIndex), 'html');
+                return result;
+            },
+
+            _highlightBasic(code, lang) {
+                const grammar = this.GRAMMAR[lang];
+                if (!grammar) return this.escapeHtml(code);
+                let tokens = [code];
+
+                for (const tokenName in grammar) {
+                    const pattern = grammar[tokenName];
+                    const newTokens =[];
+                    const regex = new RegExp(pattern, 'g'); 
+
+                    for (let i = 0; i < tokens.length; i++) {
+                        const token = tokens[i];
+                        if (typeof token !== 'string') { newTokens.push(token); continue; }
+
+                        let lastIdx = 0;
+                        let match;
+                        regex.lastIndex = 0;
+
+                        while ((match = regex.exec(token)) !== null) {
+                            if (match.index > lastIdx) newTokens.push(token.slice(lastIdx, match.index));
+                            newTokens.push({ type: tokenName, content: match[0] });
+                            lastIdx = regex.lastIndex;
+                            if (match.index === regex.lastIndex) regex.lastIndex++;
+                        }
+                        if (lastIdx < token.length) newTokens.push(token.slice(lastIdx));
+                    }
+                    tokens = newTokens;
+                }
+
+                return tokens.map(t => {
+                    if (typeof t === 'string') return this.escapeHtml(t);
+                    let className = 'token ' + t.type.replace(' ', '-');
+                    return `<span class="${className}">${this.escapeHtml(t.content)}</span>`;
+                }).join('');
+            },
+
+            escapeHtml(str) {
+                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+        };
+
+        /* --- EDITOR APP LOGIC --- */
         document.addEventListener('DOMContentLoaded', () => {
-
-            // --- DOM Elements ---
-            const editorTextarea = document.getElementById("editor");
-            const wordCountEl = document.getElementById("wordCount");
-            const charCountEl = document.getElementById("charCount");
-            const findTextEl = document.getElementById("findText");
-            const replaceWithTextEl = document.getElementById("replaceWithText");
-            const saveFilenameEl = document.getElementById("saveFilename");
-            const languageSelectEl = document.getElementById("languageSelect");
-            const statsContainer = document.getElementById("statsContainer");
-
-            // Modal and Settings Elements
-            const settingsContainer = document.getElementById("settingsContainer");
-            const overlay = document.getElementById("overlay");
-            const toggleStatsEl = document.getElementById("toggleStats");
-            const bgColorEl = document.getElementById("bgColor");
-            const textColorEl = document.getElementById("textColor");
-            const fontFamilyEl = document.getElementById("fontFamily");
-            const fontSizeEl = document.getElementById("fontSize");
-            const lineSpacingEl = document.getElementById("lineSpacing");
-
-            // Buttons
-            const replaceAllBtn = document.getElementById('replaceAllBtn');
-            const saveFileBtn = document.getElementById('saveFileBtn');
-            const settingsBtn = document.getElementById('settingsBtn');
-            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-
-            // --- State & Constants ---
-            const SETTINGS_KEY = 'editPadPro_Settings_v2';
-            let cmEditor;
-
-            // --- Utility Functions ---
-            function formatBytes(bytes, decimals = 1) {
-                if (!+bytes) return '0 B';
-                const k = 1024;
-                const dm = decimals < 0 ? 0 : decimals;
-                const sizes = ['B', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-            }
-
-            // FIX: Helper to escape special regex characters to prevent crashes
-            function escapeRegExp(string) {
-                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            }
-
-            // --- Core Editor Functions ---
-            function updateStats() {
-                if (!cmEditor) return;
-                const text = cmEditor.getValue();
-                const words = text.match(/\S+/g) || [];
-                const charCount = text.length;
-                const byteSize = new Blob([text]).size;
-                wordCountEl.textContent = `Words: ${words.length}`;
-                charCountEl.textContent = `Characters: ${charCount} (${formatBytes(byteSize)})`;
-            }
-
-            function replaceAllText() {
-                if (!cmEditor) return;
-                const findValue = findTextEl.value;
-                const replaceValue = replaceWithTextEl.value;
-                if (!findValue) {
-                    alert("Please enter text to find.");
-                    findTextEl.focus();
-                    return;
-                }
-                try {
-                    // FIX: Escape user input to prevent regex errors (e.g., searching for "C++")
-                    const escapedFindValue = escapeRegExp(findValue);
-                    const findRegex = new RegExp(escapedFindValue, "gi");
-                    
-                    let matchCount = 0;
-                    const currentText = cmEditor.getValue();
-                    
-                    // Dry run to count matches (CodeMirror can do this, but string manipulation is faster for small files)
-                    if(currentText.match(findRegex)) {
-                        matchCount = currentText.match(findRegex).length;
-                    }
-
-                    if (matchCount > 0) {
-                        const newText = currentText.replace(findRegex, replaceValue);
-                        cmEditor.setValue(newText);
-                        alert(`Replaced ${matchCount} occurrence(s).`);
-                    } else {
-                        alert("No occurrences found.");
-                    }
-                } catch (error) {
-                    console.error("Replacement Error:", error);
-                    alert("An error occurred during replacement.");
-                }
-            }
-
-            function saveFile() {
-                if (!cmEditor) return;
-                let userFileName = saveFilenameEl.value.trim();
+            const textarea = document.getElementById('editing');
+            const pre = document.getElementById('highlighting');
+            const langSelect = document.getElementById('langSelect');
+            const filenameInput = document.getElementById('filenameInput');
+            const fileInput = document.getElementById('fileInput');
+            const stats = document.getElementById('stats');
+            const charCount = document.getElementById('charCount');
+            
+            // Sync & Highlight
+            function update() {
+                const text = textarea.value;
+                const lang = langSelect.value;
+                const highlighted = SyntaxHighlighter.highlight(text, lang);
+                pre.innerHTML = highlighted + '<br>'; 
                 
-                // Fallback if empty
-                if (!userFileName) {
-                    userFileName = "document.txt";
-                }
-
-                try {
-                    const text = cmEditor.getValue();
-                    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.download = userFileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    // FIX: Release memory
-                    URL.revokeObjectURL(link.href);
-                } catch (error) {
-                    console.error("Error saving file:", error);
-                    alert("Could not save the file.");
-                }
+                // Sync Scroll
+                pre.scrollTop = textarea.scrollTop;
+                pre.scrollLeft = textarea.scrollLeft;
+                
+                // Stats
+                const chars = text.length;
+                const cursorPos = textarea.selectionStart;
+                const subStr = text.substring(0, cursorPos);
+                const currLine = subStr.split('\n').length;
+                const currCol = subStr.length - subStr.lastIndexOf('\n');
+                stats.textContent = `Ln ${currLine}, Col ${currCol}`;
+                charCount.textContent = `${chars} chars`;
             }
 
-            function changeLanguage(mode) {
-                if (!cmEditor) return;
-                cmEditor.setOption("mode", mode === 'null' ? null : mode);
-                updateFilenameHint(mode);
-            }
+            textarea.addEventListener('input', update);
+            textarea.addEventListener('scroll', () => {
+                pre.scrollTop = textarea.scrollTop;
+                pre.scrollLeft = textarea.scrollLeft;
+            });
+            ['click', 'keyup', 'keydown'].forEach(evt => textarea.addEventListener(evt, update));
 
-            function updateFilenameHint(mode) {
-                const extensions = {
-                    htmlmixed: ".html", css: ".css", javascript: ".js", markdown: ".md",
-                    python: ".py", lua: ".lua", php: ".php", sql: ".sql", xml: ".xml"
+            // Tab Key
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const val = textarea.value;
+                    textarea.value = val.substring(0, start) + "    " + val.substring(end);
+                    textarea.selectionStart = textarea.selectionEnd = start + 4;
+                    update();
+                }
+            });
+
+            // Lang Auto-detect
+            function autoDetectExt() {
+                const ext = filenameInput.value.split('.').pop().toLowerCase();
+                const map = { 'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp' };
+                if(map[ext]) { langSelect.value = map[ext]; update(); }
+            }
+            
+            filenameInput.addEventListener('blur', autoDetectExt);
+            filenameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); filenameInput.blur(); }
+            });
+            langSelect.addEventListener('change', update);
+
+            /* --- FILE I/O --- */
+            document.getElementById('btnOpen').addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    textarea.value = evt.target.result;
+                    filenameInput.value = file.name;
+                    autoDetectExt();
+                    update();
                 };
-                const extension = extensions[mode] || ".txt";
-                const currentFilename = saveFilenameEl.value;
+                reader.readAsText(file);
+            });
+
+            document.getElementById('btnSave').addEventListener('click', () => {
+                const blob = new Blob([textarea.value], {type: "text/plain;charset=utf-8"});
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = filenameInput.value || "untitled.txt";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+
+            /* --- FIND & REPLACE --- */
+            const findBar = document.getElementById('findBar');
+            const findInput = document.getElementById('findInput');
+            
+            document.getElementById('btnFind').addEventListener('click', () => {
+                findBar.classList.toggle('active');
+                if(findBar.classList.contains('active')) findInput.focus();
+            });
+            document.getElementById('btnCloseFind').addEventListener('click', () => findBar.classList.remove('active'));
+
+            function findText() {
+                const val = findInput.value;
+                if(!val) return;
+                const text = textarea.value;
+                const start = textarea.selectionEnd;
+                let idx = text.indexOf(val, start);
+                if(idx === -1) idx = text.indexOf(val); // Loop to start
+                if(idx !== -1) {
+                    textarea.focus();
+                    textarea.setSelectionRange(idx, idx + val.length);
+                    update();
+                }
+            }
+            
+            findInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') { e.preventDefault(); findText(); } });
+            document.getElementById('btnFindNext').addEventListener('click', findText);
+            document.getElementById('btnReplace').addEventListener('click', () => {
+                const findVal = findInput.value;
+                const repVal = document.getElementById('replaceInput').value;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                if(textarea.value.substring(start, end) === findVal) {
+                    textarea.setRangeText(repVal, start, end, 'select');
+                    update();
+                }
+                findText();
+            });
+            document.getElementById('btnReplaceAll').addEventListener('click', () => {
+                const findVal = findInput.value;
+                const repVal = document.getElementById('replaceInput').value;
+                if(!findVal) return;
+                const regex = new RegExp(findVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                textarea.value = textarea.value.replace(regex, repVal);
+                update();
+            });
+
+            /* --- SETTINGS & CUSTOMIZATION --- */
+            const settingsModal = document.getElementById('settingsModal');
+            document.getElementById('btnSettings').addEventListener('click', () => settingsModal.classList.add('active'));
+            document.getElementById('btnCloseSettings').addEventListener('click', () => settingsModal.classList.remove('active'));
+            settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.classList.remove('active'); });
+
+            // Elements
+            const themeSelect = document.getElementById('themeSelect');
+            const bgColorInput = document.getElementById('bgColorInput');
+            const textColorInput = document.getElementById('textColorInput');
+            const fontSelect = document.getElementById('fontSelect');
+            const fontSizeInput = document.getElementById('fontSizeInput');
+            const lineHeightInput = document.getElementById('lineHeightInput');
+
+            // Theme Preset Logic
+            themeSelect.addEventListener('change', (e) => {
+                const root = document.documentElement;
+                if(e.target.value === 'light') {
+                    document.body.classList.add('light-mode');
+                    root.style.removeProperty('--bg-editor');
+                    root.style.removeProperty('--text-main');
+                    bgColorInput.value = '#ffffff';
+                    textColorInput.value = '#18181b';
+                } else {
+                    document.body.classList.remove('light-mode');
+                    root.style.removeProperty('--bg-editor');
+                    root.style.removeProperty('--text-main');
+                    bgColorInput.value = '#18181b';
+                    textColorInput.value = '#e4e4e7';
+                }
+            });
+
+            // Customization Listeners
+            bgColorInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--bg-editor', e.target.value));
+            textColorInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--text-main', e.target.value));
+            fontSelect.addEventListener('change', (e) => document.documentElement.style.setProperty('--font-code', e.target.value));
+            fontSizeInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--font-size', e.target.value + 'px'));
+            lineHeightInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--line-height', e.target.value));
+
+            /* --- KEYBOARD SHORTCUTS --- */
+            document.addEventListener('keydown', (e) => {
+                const cmd = e.ctrlKey || e.metaKey;
+                if(cmd && e.key.toLowerCase() === 's') { e.preventDefault(); document.getElementById('btnSave').click(); }
+                if(cmd && e.key.toLowerCase() === 'o') { e.preventDefault(); document.getElementById('btnOpen').click(); }
+                if(cmd && e.key.toLowerCase() === 'f') { e.preventDefault(); document.getElementById('btnFind').click(); }
                 
-                // Auto-update filename only if it looks like a default name or has no extension
-                const isDefault = currentFilename === '' || currentFilename.startsWith('editpad-') || !currentFilename.includes('.');
-                
-                if (isDefault) {
-                    // Preserve base name if it exists and just swap extension, otherwise generate timestamp
-                    if (currentFilename && !currentFilename.startsWith('editpad-') && currentFilename.indexOf('.') === -1) {
-                         saveFilenameEl.value = `${currentFilename}${extension}`;
-                    } else {
-                         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
-                         saveFilenameEl.value = `editpad-${timestamp}${extension}`;
-                    }
-                }
-            }
-
-            // --- Settings Modal Logic ---
-            function toggleSettings() {
-                settingsContainer.classList.toggle("show");
-                overlay.classList.toggle("show");
-            }
-
-            // --- Settings Persistence ---
-            function applyAndSaveSetting(key, value, applyFn) {
-                try {
-                    applyFn(value);
-                    saveSettings();
-                } catch (error) {
-                    console.error(`Error applying setting ${key}:`, error);
-                }
-            }
-
-            function saveSettings() {
-                if (!cmEditor) return;
-                const settings = {
-                    statsVisible: toggleStatsEl.checked,
-                    language: languageSelectEl.value,
-                    bgColorOverride: bgColorEl.value,
-                    textColorOverride: textColorEl.value,
-                    fontFamily: fontFamilyEl.value,
-                    fontSize: fontSizeEl.value,
-                    lineSpacing: lineSpacingEl.value,
-                };
-                try {
-                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-                } catch (error) {
-                    console.error("Error saving settings to localStorage:", error);
-                }
-            }
-
-            function loadAndApplySettings() {
-                let loadedSettings = {};
-                try {
-                    const savedSettings = localStorage.getItem(SETTINGS_KEY);
-                    if (savedSettings) {
-                        loadedSettings = JSON.parse(savedSettings);
-                    }
-                } catch (error) {
-                    console.error("Error loading settings from localStorage:", error);
-                }
-
-                // Initialize CodeMirror
-                cmEditor = CodeMirror.fromTextArea(editorTextarea, {
-                    mode: loadedSettings.language || 'null',
-                    theme: "material-darker",
-                    lineNumbers: true,
-                    lineWrapping: true,
-                    indentUnit: 4,
-                    tabSize: 4,
-                    autoCloseTags: true,
-                    matchBrackets: true,
-                });
-                const cmWrapper = cmEditor.getWrapperElement();
-
-                // Apply Settings to UI Controls and CM instance
-                toggleStatsEl.checked = loadedSettings.statsVisible ?? true;
-                statsContainer.classList.toggle('hidden', !toggleStatsEl.checked);
-
-                languageSelectEl.value = loadedSettings.language || 'null';
-                // Trigger hint update once on load
-                if(!saveFilenameEl.value) updateFilenameHint(languageSelectEl.value);
-
-                bgColorEl.value = loadedSettings.bgColorOverride || '#252526';
-                if (bgColorEl.value !== '#252526') cmWrapper.style.backgroundColor = bgColorEl.value;
-
-                textColorEl.value = loadedSettings.textColorOverride || '#d4d4d4';
-                if (textColorEl.value !== '#d4d4d4') cmWrapper.style.color = textColorEl.value;
-
-                fontFamilyEl.value = loadedSettings.fontFamily || "'Fira Code', monospace";
-                cmWrapper.style.fontFamily = fontFamilyEl.value;
-
-                fontSizeEl.value = loadedSettings.fontSize || '16';
-                cmWrapper.style.fontSize = `${fontSizeEl.value}px`;
-
-                lineSpacingEl.value = loadedSettings.lineSpacing || '1.6';
-                cmWrapper.style.lineHeight = lineSpacingEl.value;
-
-                // Final Setup after load
-                cmEditor.on('change', updateStats);
-                cmEditor.refresh();
-                updateStats();
-            }
-
-            // --- Event Listeners Setup ---
-            replaceAllBtn.addEventListener('click', replaceAllText);
-            saveFileBtn.addEventListener('click', saveFile);
-            settingsBtn.addEventListener('click', toggleSettings);
-            closeSettingsBtn.addEventListener('click', toggleSettings);
-            overlay.addEventListener('click', toggleSettings);
-            languageSelectEl.addEventListener("change", () => {
-                applyAndSaveSetting('language', languageSelectEl.value, changeLanguage);
-            });
-
-            // Settings Change Listeners
-            toggleStatsEl.addEventListener("change", function() {
-                applyAndSaveSetting('statsVisible', this.checked, (val) => {
-                    statsContainer.classList.toggle('hidden', !val);
-                });
-            });
-            bgColorEl.addEventListener("input", function() {
-                // Immediate feedback for colors
-                cmEditor.getWrapperElement().style.backgroundColor = this.value;
-            });
-            bgColorEl.addEventListener("change", saveSettings); // Save on release
-
-            textColorEl.addEventListener("input", function() {
-                cmEditor.getWrapperElement().style.color = this.value;
-            });
-            textColorEl.addEventListener("change", saveSettings);
-
-            fontFamilyEl.addEventListener("change", function() {
-                applyAndSaveSetting('fontFamily', this.value, (val) => {
-                    cmEditor.getWrapperElement().style.fontFamily = val;
-                    cmEditor.refresh();
-                });
-            });
-
-            fontSizeEl.addEventListener("input", function() {
-                // FIX: Input validation/clamping
-                let val = parseInt(this.value);
-                if (isNaN(val)) return; 
-                // Don't clamp strictly on input to allow typing, but limit visual application
-                const visualSize = Math.max(8, Math.min(48, val));
-                cmEditor.getWrapperElement().style.fontSize = `${visualSize}px`;
-                cmEditor.refresh();
-            });
-            fontSizeEl.addEventListener("change", function() {
-                // Clamp strict on blur/enter
-                let val = parseInt(this.value);
-                if (isNaN(val)) val = 16;
-                this.value = Math.max(8, Math.min(48, val));
-                saveSettings();
-            });
-
-            lineSpacingEl.addEventListener("input", function() {
-                let val = parseFloat(this.value);
-                if (isNaN(val)) return;
-                const visualSpacing = Math.max(1, Math.min(3, val));
-                cmEditor.getWrapperElement().style.lineHeight = visualSpacing;
-                cmEditor.refresh();
-            });
-            lineSpacingEl.addEventListener("change", function() {
-                 let val = parseFloat(this.value);
-                 if (isNaN(val)) val = 1.6;
-                 this.value = Math.max(1, Math.min(3, val));
-                 saveSettings();
-            });
-
-            // Keyboard Shortcuts
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && settingsContainer.classList.contains('show')) {
-                    toggleSettings();
-                }
-                if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-                    event.preventDefault();
-                    saveFile();
+                // Escape closes UI overlays
+                if(e.key === 'Escape') {
+                    if(findBar.classList.contains('active')) { document.getElementById('btnCloseFind').click(); textarea.focus(); }
+                    else if(settingsModal.classList.contains('active')) { document.getElementById('btnCloseSettings').click(); textarea.focus(); }
                 }
             });
 
-            // --- Initialization ---
-            loadAndApplySettings();
+            update(); // Init
         });
     </script>
 </body>
