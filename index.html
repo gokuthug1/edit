@@ -319,7 +319,6 @@
                     <option value="css">CSS</option>
                     <option value="python">Python</option>
                     <option value="json">JSON</option>
-                    <option value="sql">SQL</option>
                     <option value="markdown">Markdown</option>
                     <option value="lua">Lua</option>
                     <option value="cpp">C++</option>
@@ -509,14 +508,6 @@
                     'operator': /&&|\|\||;;|\||&|>|<|!/,
                     'number': /\b\d+\b/
                 },
-                sql: {
-                    'comment': /--.*|\/\*[\s\S]*?\*\//,
-                    'string': /'(?:''|[^'])*'/,
-                    'keyword': /\b(?:SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|JOIN|INNER|OUTER|LEFT|RIGHT|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|UNION|ALL|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END|IS|NULL|AND|OR|NOT|IN|EXISTS|LIKE|VALUES|SET|PRIMARY|KEY|FOREIGN|REFERENCES)\b/i,
-                    'function': /\b(?:COUNT|SUM|AVG|MIN|MAX|NOW|DATE|CONCAT)\b/i,
-                    'number': /\b-?\d+(?:\.\d+)?\b/,
-                    'operator': /[=<>!]+/,
-                    'punctuation': /[();,.]/
                 },
                 cpp: {
                     'comment': /(\/\/.*)|(\/\*[\s\S]*?\*\/)/,
