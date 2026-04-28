@@ -174,13 +174,13 @@
 
         .editor-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            margin: 0; padding: 24px; border: none;
+            margin: 0; padding: 24px 24px 50px 24px; border: none;
             font-family: var(--font-code); font-size: var(--font-size); line-height: var(--line-height);
-            tab-size: 4; white-space: pre; overflow: auto; outline: none;
+            tab-size: 4; white-space: pre; overflow-wrap: normal; overflow: auto; outline: none;
             background: transparent; -webkit-font-smoothing: antialiased;
         }
 
-        #highlighting { z-index: 1; color: var(--text-main); pointer-events: none; padding-bottom: 50px;}
+        #highlighting { z-index: 1; color: var(--text-main); pointer-events: none; }
         #highlighting::-webkit-scrollbar { display: none; }
         #highlighting { scrollbar-width: none; }
         
@@ -270,6 +270,7 @@
         .token.tag { color: #7ee787; }
         .token.attr-value { color: #a5d6ff; }
         .token.selector { color: #d2a8ff; }
+        .token.variable { color: #79c0ff; }
 
         /* Light Mode Syntax Overrides */
         body.light-mode .token.comment { color: #6e7781; }
@@ -285,6 +286,7 @@
         body.light-mode .token.tag { color: #116329; }
         body.light-mode .token.attr-value { color: #0a3069; }
         body.light-mode .token.selector { color: #8250df; }
+        body.light-mode .token.variable { color: #0550ae; }
     </style>
 </head>
 <body>
@@ -323,6 +325,7 @@
                     <option value="lua">Lua</option>
                     <option value="cpp">C++</option>
                     <option value="bash">Bash</option>
+                    <option value="sql">SQL</option>
                 </select>
                 <button id="btnFind" class="icon-btn" title="Find & Replace (Ctrl+F)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -353,7 +356,7 @@
                     <button id="btnReplace" class="text-btn">Replace</button>
                     <button id="btnReplaceAll" class="text-btn">All</button>
                     <div class="divider"></div>
-                    <button id="btnCloseFind" class="icon-btn" title="Close">
+                    <button id="btnCloseFind" class="icon-btn" title="Close (Esc)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
@@ -362,7 +365,7 @@
             <!-- Editor Container -->
             <div class="editor-container" id="editorContainer">
                 <pre id="highlighting" class="editor-layer" aria-hidden="true"></pre>
-                <textarea id="editing" class="editor-layer" spellcheck="false" nowrap></textarea>
+                <textarea id="editing" class="editor-layer" spellcheck="false" wrap="off"></textarea>
             </div>
         </main>
 
@@ -508,6 +511,14 @@
                     'operator': /&&|\|\||;;|\||&|>|<|!/,
                     'number': /\b\d+\b/
                 },
+                sql: {
+                    'comment': /--.*|\/\*[\s\S]*?\*\//,
+                    'string': /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"/,
+                    'keyword': /\b(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|AND|OR|NOT|IN|AS|JOIN|INNER|LEFT|RIGHT|OUTER|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|CREATE|ALTER|DROP|TABLE|INDEX|VIEW|UNION|ALL)\b/i,
+                    'function': /\b(?:COUNT|SUM|AVG|MIN|MAX|COALESCE|CAST)\b/i,
+                    'number': /\b-?\d+(?:\.\d+)?\b/,
+                    'operator': /[<>!=]=?|[+\-*/%]/,
+                    'punctuation': /[(),;.]/
                 },
                 cpp: {
                     'comment': /(\/\/.*)|(\/\*[\s\S]*?\*\/)/,
@@ -572,7 +583,7 @@
 
                 for (const tokenName in grammar) {
                     const pattern = grammar[tokenName];
-                    const newTokens =[];
+                    const newTokens = [];
                     const regex = new RegExp(pattern, 'g'); 
 
                     for (let i = 0; i < tokens.length; i++) {
@@ -621,9 +632,10 @@
                 const text = textarea.value;
                 const lang = langSelect.value;
                 const highlighted = SyntaxHighlighter.highlight(text, lang);
+                // The `<br>` added to the end ensures pre layer wraps height effectively identical to textarea.
                 pre.innerHTML = highlighted + '<br>'; 
                 
-                // Sync Scroll
+                // Sync Scroll immediately upon DOM update
                 pre.scrollTop = textarea.scrollTop;
                 pre.scrollLeft = textarea.scrollLeft;
                 
@@ -644,7 +656,7 @@
             });
             ['click', 'keyup', 'keydown'].forEach(evt => textarea.addEventListener(evt, update));
 
-            // Tab Key
+            // Tab Key behavior
             textarea.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab') {
                     e.preventDefault();
@@ -657,7 +669,7 @@
                 }
             });
 
-            // Lang Auto-detect
+            // Lang Auto-detect from filename
             function autoDetectExt() {
                 const ext = filenameInput.value.split('.').pop().toLowerCase();
                 const map = { 'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp' };
@@ -683,6 +695,8 @@
                     update();
                 };
                 reader.readAsText(file);
+                // Clear the input value so the same file can be loaded again if needed
+                fileInput.value = '';
             });
 
             document.getElementById('btnSave').addEventListener('click', () => {
@@ -794,7 +808,7 @@
                 }
             });
 
-            update(); // Init
+            update(); // Init Call
         });
     </script>
 </body>
