@@ -669,18 +669,51 @@
                 }
             });
 
-            // Lang Auto-detect from filename
+            // Maps for Language <-> Extension tracking
+            const extToLangMap = { 
+                'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 
+                'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 
+                'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 
+                'cpp': 'cpp', 'h': 'cpp', 'lua': 'lua'
+            };
+
+            const langToExtMap = {
+                'plaintext': 'txt', 'javascript': 'js', 'html': 'html',
+                'css': 'css', 'python': 'py', 'json': 'json',
+                'markdown': 'md', 'lua': 'lua', 'cpp': 'cpp',
+                'bash': 'sh', 'sql': 'sql'
+            };
+
+            // Lang Auto-detect from filename typing
             function autoDetectExt() {
                 const ext = filenameInput.value.split('.').pop().toLowerCase();
-                const map = { 'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp' };
-                if(map[ext]) { langSelect.value = map[ext]; update(); }
+                if(extToLangMap[ext] && langSelect.value !== extToLangMap[ext]) { 
+                    langSelect.value = extToLangMap[ext]; 
+                    update(); 
+                }
             }
             
             filenameInput.addEventListener('blur', autoDetectExt);
             filenameInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); filenameInput.blur(); }
             });
-            langSelect.addEventListener('change', update);
+
+            // Extension Auto-update when selecting a Language manually
+            langSelect.addEventListener('change', (e) => {
+                const selectedLang = e.target.value;
+                const newExt = langToExtMap[selectedLang] || 'txt';
+                let currentName = filenameInput.value || 'untitled';
+                
+                // Remove existing known extension if it exists
+                const lastDot = currentName.lastIndexOf('.');
+                if(lastDot !== -1) {
+                    currentName = currentName.substring(0, lastDot);
+                }
+                
+                // Update the filename input with the new extension
+                filenameInput.value = `${currentName}.${newExt}`;
+                update();
+            });
 
             /* --- FILE I/O --- */
             document.getElementById('btnOpen').addEventListener('click', () => fileInput.click());
