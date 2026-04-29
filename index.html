@@ -20,6 +20,7 @@
             /* Text & Accents */
             --text-main: #e4e4e7; 
             --text-muted: #a1a1aa; 
+            --text-inverse: #18181b;
             --accent: #0ea5e9; 
             --accent-hover: #38bdf8; 
             --accent-bg: rgba(14, 165, 233, 0.15);
@@ -30,8 +31,6 @@
             --font-ui: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-code: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             --font-size: 14px;
-            /* Changed to 1.5 to ensure strict integer pixel outputs (14 * 1.5 = 21px) 
-               to prevent sub-pixel rounding mismatches on very large files */
             --line-height: 1.5;
 
             /* Effects */
@@ -52,6 +51,7 @@
             
             --text-main: #18181b; 
             --text-muted: #52525b; 
+            --text-inverse: #ffffff;
             --accent: #0284c7; 
             --accent-hover: #0369a1;
             --accent-bg: rgba(2, 132, 199, 0.15);
@@ -180,13 +180,11 @@
             font-family: var(--font-code); font-size: var(--font-size); line-height: var(--line-height);
             tab-size: 4; white-space: pre; overflow-wrap: normal; overflow: auto; outline: none;
             background: transparent; -webkit-font-smoothing: antialiased;
-            /* Prevents syntax highlighting span tags from shifting text width vs the raw textarea */
             font-variant-ligatures: none; 
         }
 
         #highlighting { z-index: 1; color: var(--text-main); pointer-events: none; }
         
-        /* Keep scrollbar on highlighting so it mirrors textarea dimensions perfectly, but make it transparent */
         #highlighting::-webkit-scrollbar-thumb { background: transparent; border: none; }
         #highlighting::-webkit-scrollbar-track { background: transparent; }
         #highlighting::-webkit-scrollbar-corner { background: transparent; }
@@ -197,7 +195,6 @@
             color: transparent; 
             caret-color: var(--caret); 
             resize: none; 
-            /* Allows browser to show default cursor (arrow) over scrollbars and text cursor (I-beam) over text */
             cursor: auto; 
         }
         #editing::selection { background: var(--selection); color: transparent; }
@@ -245,7 +242,8 @@
         
         .modal {
             background: var(--bg-ui); border: 1px solid var(--border); border-radius: 12px;
-            padding: 24px; width: 360px; box-shadow: var(--shadow-lg);
+            padding: 24px; width: 380px; box-shadow: var(--shadow-lg);
+            max-height: 90vh; overflow-y: auto;
             transform: scale(0.95); opacity: 0; transition: var(--transition);
         }
         .modal-overlay.active .modal { transform: scale(1); opacity: 1; }
@@ -259,7 +257,7 @@
 
         .styled-select, .styled-input {
             background: var(--bg-hover); border: 1px solid transparent; color: var(--text-main);
-            padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none; transition: var(--transition); width: 150px;
+            padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none; transition: var(--transition); width: 160px;
         }
         .styled-select:focus, .styled-input:focus { background: var(--bg-editor); border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--accent-bg); }
 
@@ -270,6 +268,47 @@
         }
         .styled-color::-webkit-color-swatch-wrapper { padding: 0; }
         .styled-color::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 6px; }
+
+        /* Custom Toggle Switch */
+        .toggle-switch {
+            position: relative; display: inline-block; width: 36px; height: 20px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg-hover); transition: .2s; border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px;
+            background-color: var(--text-muted); transition: .2s; border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider { background-color: var(--accent); border-color: var(--accent); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #fff; }
+
+        .settings-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* --- Custom Tooltip --- */
+        .custom-tooltip {
+            position: fixed;
+            background: var(--text-main);
+            color: var(--text-inverse);
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.95) translateY(4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 9999;
+            box-shadow: var(--shadow-md);
+            white-space: nowrap;
+        }
+        .custom-tooltip.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
 
         /* --- Syntax Colors (Premium Theme) --- */
         .token.comment { color: #71717a; font-style: italic; }
@@ -314,22 +353,22 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                     <span>EditPad Pro</span>
                 </div>
-                <button id="btnOpen" class="icon-btn" title="Open File (Ctrl+O)">
+                <button id="btnOpen" class="icon-btn" data-tooltip="Open File (Ctrl+O)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>
                 </button>
                 <input type="file" id="fileInput" style="display:none">
                 
-                <button id="btnSave" class="icon-btn" title="Save File (Ctrl+S)">
+                <button id="btnSave" class="icon-btn" data-tooltip="Save File (Ctrl+S)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 </button>
             </div>
 
             <div class="header-center">
-                <input type="text" id="filenameInput" class="filename-input" placeholder="untitled.txt" spellcheck="false">
+                <input type="text" id="filenameInput" class="filename-input" placeholder="untitled.txt" spellcheck="false" data-tooltip="Rename File">
             </div>
 
             <div class="header-right">
-                <select id="langSelect" class="lang-select" title="Language Mode">
+                <select id="langSelect" class="lang-select" data-tooltip="Language Mode">
                     <option value="plaintext">Plain Text</option>
                     <option value="javascript">JavaScript</option>
                     <option value="html">HTML</option>
@@ -342,10 +381,10 @@
                     <option value="bash">Bash</option>
                     <option value="sql">SQL</option>
                 </select>
-                <button id="btnFind" class="icon-btn" title="Find & Replace (Ctrl+F)">
+                <button id="btnFind" class="icon-btn" data-tooltip="Find & Replace (Ctrl+F)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </button>
-                <button id="btnSettings" class="icon-btn" title="Settings">
+                <button id="btnSettings" class="icon-btn" data-tooltip="Settings">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
             </div>
@@ -364,14 +403,14 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
                         <input type="text" id="replaceInput" placeholder="Replace" class="find-input">
                     </div>
-                    <button id="btnFindNext" class="icon-btn" title="Next Occurrence">
+                    <button id="btnFindNext" class="icon-btn" data-tooltip="Next Occurrence">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
                     </button>
                     <div class="divider"></div>
                     <button id="btnReplace" class="text-btn">Replace</button>
                     <button id="btnReplaceAll" class="text-btn">All</button>
                     <div class="divider"></div>
-                    <button id="btnCloseFind" class="icon-btn" title="Close (Esc)">
+                    <button id="btnCloseFind" class="icon-btn" data-tooltip="Close (Esc)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
@@ -380,7 +419,7 @@
             <!-- Editor Container -->
             <div class="editor-container" id="editorContainer">
                 <pre id="highlighting" class="editor-layer" aria-hidden="true"></pre>
-                <textarea id="editing" class="editor-layer" spellcheck="false" wrap="off"></textarea>
+                <textarea id="editing" class="editor-layer" spellcheck="false" autocorrect="off" autocapitalize="off" wrap="off"></textarea>
             </div>
         </main>
 
@@ -400,12 +439,38 @@
             <div class="modal">
                 <div class="modal-header">
                     <h3>Editor Settings</h3>
-                    <button id="btnCloseSettings" class="icon-btn">
+                    <button id="btnCloseSettings" class="icon-btn" data-tooltip="Close">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
                 
                 <div class="settings-group">
+                    <div class="modal-row">
+                        <label>Save Workspace Locally</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="saveLocalToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Spell Check</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="spellCheckToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="modal-row">
+                        <label>Auto-Correct</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoCorrectToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-divider"></div>
+
                     <div class="modal-row">
                         <label>Theme Preset</label>
                         <select id="themeSelect" class="styled-select">
@@ -430,7 +495,7 @@
 
                     <div class="modal-row">
                         <label>Font Family</label>
-                        <select id="fontSelect" class="styled-select" style="width: 160px;">
+                        <select id="fontSelect" class="styled-select">
                             <option value='"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace'>System Monospace</option>
                             <option value='"Fira Code", monospace'>Fira Code</option>
                             <option value='"Consolas", "Monaco", monospace'>Consolas / Monaco</option>
@@ -454,6 +519,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Tooltip Element -->
+    <div id="customTooltip" class="custom-tooltip"></div>
 
     <script>
         /**
@@ -642,24 +710,126 @@
             const stats = document.getElementById('stats');
             const charCount = document.getElementById('charCount');
             
+            // UI Components
+            const findBar = document.getElementById('findBar');
+            const findInput = document.getElementById('findInput');
+            const settingsModal = document.getElementById('settingsModal');
+            
+            // Custom Tooltip Engine
+            const tooltipEl = document.getElementById('customTooltip');
+            document.querySelectorAll('[data-tooltip]').forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    tooltipEl.textContent = el.getAttribute('data-tooltip');
+                    tooltipEl.classList.add('show');
+                    
+                    const rect = el.getBoundingClientRect();
+                    // Position primarily below
+                    let top = rect.bottom + 8;
+                    let left = rect.left + (rect.width / 2) - (tooltipEl.offsetWidth / 2);
+                    
+                    // Prevent off-screen
+                    if (left < 8) left = 8;
+                    if (left + tooltipEl.offsetWidth > window.innerWidth - 8) {
+                        left = window.innerWidth - tooltipEl.offsetWidth - 8;
+                    }
+                    
+                    tooltipEl.style.top = top + 'px';
+                    tooltipEl.style.left = left + 'px';
+                });
+                
+                el.addEventListener('mouseleave', () => tooltipEl.classList.remove('show'));
+                el.addEventListener('click', () => tooltipEl.classList.remove('show'));
+            });
+
+            // Local Storage & App Settings System
+            const defaultSettings = {
+                saveLocal: true,
+                spellCheck: false,
+                autoCorrect: false,
+                theme: 'dark',
+                bgColor: '#18181b',
+                textColor: '#e4e4e7',
+                fontFamily: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace',
+                fontSize: 14,
+                lineHeight: 1.5
+            };
+            
+            let appSettings = JSON.parse(localStorage.getItem('editpad_settings')) || defaultSettings;
+
+            const toggles = {
+                saveLocal: document.getElementById('saveLocalToggle'),
+                spellCheck: document.getElementById('spellCheckToggle'),
+                autoCorrect: document.getElementById('autoCorrectToggle')
+            };
+
+            const inputs = {
+                theme: document.getElementById('themeSelect'),
+                bgColor: document.getElementById('bgColorInput'),
+                textColor: document.getElementById('textColorInput'),
+                fontFamily: document.getElementById('fontSelect'),
+                fontSize: document.getElementById('fontSizeInput'),
+                lineHeight: document.getElementById('lineHeightInput')
+            };
+
+            function applySettingsToDOM() {
+                // Apply Toggles
+                textarea.spellcheck = appSettings.spellCheck;
+                textarea.setAttribute('autocorrect', appSettings.autoCorrect ? 'on' : 'off');
+                textarea.setAttribute('autocapitalize', appSettings.autoCorrect ? 'on' : 'off');
+                
+                // Set UI state
+                toggles.saveLocal.checked = appSettings.saveLocal;
+                toggles.spellCheck.checked = appSettings.spellCheck;
+                toggles.autoCorrect.checked = appSettings.autoCorrect;
+                
+                inputs.theme.value = appSettings.theme;
+                inputs.bgColor.value = appSettings.bgColor;
+                inputs.textColor.value = appSettings.textColor;
+                inputs.fontFamily.value = appSettings.fontFamily;
+                inputs.fontSize.value = appSettings.fontSize;
+                inputs.lineHeight.value = appSettings.lineHeight;
+
+                // Apply CSS Variables
+                const root = document.documentElement;
+                if(appSettings.theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    if(appSettings.bgColor === defaultSettings.bgColor) appSettings.bgColor = '#ffffff';
+                    if(appSettings.textColor === defaultSettings.textColor) appSettings.textColor = '#18181b';
+                } else {
+                    document.body.classList.remove('light-mode');
+                }
+
+                root.style.setProperty('--bg-editor', appSettings.bgColor);
+                root.style.setProperty('--text-main', appSettings.textColor);
+                root.style.setProperty('--font-code', appSettings.fontFamily);
+                root.style.setProperty('--font-size', appSettings.fontSize + 'px');
+                root.style.setProperty('--line-height', appSettings.lineHeight);
+
+                // Save
+                localStorage.setItem('editpad_settings', JSON.stringify(appSettings));
+            }
+
+            function saveWorkspace() {
+                if (!appSettings.saveLocal) return;
+                localStorage.setItem('editpad_text', textarea.value);
+                localStorage.setItem('editpad_filename', filenameInput.value);
+                localStorage.setItem('editpad_lang', langSelect.value);
+            }
+
             // Sync & Highlight
             function update() {
                 const text = textarea.value;
                 const lang = langSelect.value;
                 let highlighted = SyntaxHighlighter.highlight(text, lang);
                 
-                // Textarea naturally shifts caret to a new line if it ends with \n.
-                // We add exactly one <br> to mirror this behavior flawlessly.
                 if (text.endsWith('\n') || text === '') {
                     highlighted += '<br>';
                 }
                 pre.innerHTML = highlighted; 
                 
-                // Sync Scroll immediately upon DOM update
                 pre.scrollTop = textarea.scrollTop;
                 pre.scrollLeft = textarea.scrollLeft;
                 
-                // Stats
                 const chars = text.length;
                 const cursorPos = textarea.selectionStart;
                 const subStr = text.substring(0, cursorPos);
@@ -667,13 +837,13 @@
                 const currCol = subStr.length - subStr.lastIndexOf('\n');
                 stats.textContent = `Ln ${currLine}, Col ${currCol}`;
                 charCount.textContent = `${chars} chars`;
+
+                // Quick Local Save
+                saveWorkspace();
             }
 
             textarea.addEventListener('input', update);
-            textarea.addEventListener('scroll', () => {
-                pre.scrollTop = textarea.scrollTop;
-                pre.scrollLeft = textarea.scrollLeft;
-            });
+            textarea.addEventListener('scroll', () => { pre.scrollTop = textarea.scrollTop; pre.scrollLeft = textarea.scrollLeft; });
             ['click', 'keyup', 'keydown'].forEach(evt => textarea.addEventListener(evt, update));
 
             // Tab Key behavior
@@ -689,27 +859,17 @@
                 }
             });
 
-            // Maps for Language <-> Extension tracking
-            const extToLangMap = { 
-                'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 
-                'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 
-                'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 
-                'cpp': 'cpp', 'h': 'cpp', 'lua': 'lua'
-            };
+            // Auto-detect Extension
+            const extToLangMap = { 'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp', 'lua': 'lua' };
+            const langToExtMap = { 'plaintext': 'txt', 'javascript': 'js', 'html': 'html', 'css': 'css', 'python': 'py', 'json': 'json', 'markdown': 'md', 'lua': 'lua', 'cpp': 'cpp', 'bash': 'sh', 'sql': 'sql' };
 
-            const langToExtMap = {
-                'plaintext': 'txt', 'javascript': 'js', 'html': 'html',
-                'css': 'css', 'python': 'py', 'json': 'json',
-                'markdown': 'md', 'lua': 'lua', 'cpp': 'cpp',
-                'bash': 'sh', 'sql': 'sql'
-            };
-
-            // Lang Auto-detect from filename typing
             function autoDetectExt() {
                 const ext = filenameInput.value.split('.').pop().toLowerCase();
                 if(extToLangMap[ext] && langSelect.value !== extToLangMap[ext]) { 
                     langSelect.value = extToLangMap[ext]; 
                     update(); 
+                } else {
+                    saveWorkspace();
                 }
             }
             
@@ -718,19 +878,12 @@
                 if (e.key === 'Enter') { e.preventDefault(); filenameInput.blur(); }
             });
 
-            // Extension Auto-update when selecting a Language manually
             langSelect.addEventListener('change', (e) => {
                 const selectedLang = e.target.value;
                 const newExt = langToExtMap[selectedLang] || 'txt';
                 let currentName = filenameInput.value || 'untitled';
-                
-                // Remove existing known extension if it exists
                 const lastDot = currentName.lastIndexOf('.');
-                if(lastDot !== -1) {
-                    currentName = currentName.substring(0, lastDot);
-                }
-                
-                // Update the filename input with the new extension
+                if(lastDot !== -1) currentName = currentName.substring(0, lastDot);
                 filenameInput.value = `${currentName}.${newExt}`;
                 update();
             });
@@ -748,7 +901,6 @@
                     update();
                 };
                 reader.readAsText(file);
-                // Clear the input value so the same file can be loaded again if needed
                 fileInput.value = '';
             });
 
@@ -763,9 +915,6 @@
             });
 
             /* --- FIND & REPLACE --- */
-            const findBar = document.getElementById('findBar');
-            const findInput = document.getElementById('findInput');
-            
             document.getElementById('btnFind').addEventListener('click', () => {
                 findBar.classList.toggle('active');
                 if(findBar.classList.contains('active')) findInput.focus();
@@ -778,7 +927,7 @@
                 const text = textarea.value;
                 const start = textarea.selectionEnd;
                 let idx = text.indexOf(val, start);
-                if(idx === -1) idx = text.indexOf(val); // Loop to start
+                if(idx === -1) idx = text.indexOf(val);
                 if(idx !== -1) {
                     textarea.focus();
                     textarea.setSelectionRange(idx, idx + val.length);
@@ -808,44 +957,38 @@
                 update();
             });
 
-            /* --- SETTINGS & CUSTOMIZATION --- */
-            const settingsModal = document.getElementById('settingsModal');
+            /* --- SETTINGS & CUSTOMIZATION LISTENER --- */
             document.getElementById('btnSettings').addEventListener('click', () => settingsModal.classList.add('active'));
             document.getElementById('btnCloseSettings').addEventListener('click', () => settingsModal.classList.remove('active'));
             settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.classList.remove('active'); });
 
-            // Elements
-            const themeSelect = document.getElementById('themeSelect');
-            const bgColorInput = document.getElementById('bgColorInput');
-            const textColorInput = document.getElementById('textColorInput');
-            const fontSelect = document.getElementById('fontSelect');
-            const fontSizeInput = document.getElementById('fontSizeInput');
-            const lineHeightInput = document.getElementById('lineHeightInput');
-
-            // Theme Preset Logic
-            themeSelect.addEventListener('change', (e) => {
-                const root = document.documentElement;
-                if(e.target.value === 'light') {
-                    document.body.classList.add('light-mode');
-                    root.style.removeProperty('--bg-editor');
-                    root.style.removeProperty('--text-main');
-                    bgColorInput.value = '#ffffff';
-                    textColorInput.value = '#18181b';
-                } else {
-                    document.body.classList.remove('light-mode');
-                    root.style.removeProperty('--bg-editor');
-                    root.style.removeProperty('--text-main');
-                    bgColorInput.value = '#18181b';
-                    textColorInput.value = '#e4e4e7';
-                }
+            // Listen to Toggles
+            Object.keys(toggles).forEach(key => {
+                toggles[key].addEventListener('change', (e) => {
+                    appSettings[key] = e.target.checked;
+                    if(key === 'saveLocal' && !e.target.checked) {
+                        localStorage.removeItem('editpad_text');
+                        localStorage.removeItem('editpad_filename');
+                        localStorage.removeItem('editpad_lang');
+                    } else if (key === 'saveLocal' && e.target.checked) {
+                        saveWorkspace();
+                    }
+                    applySettingsToDOM();
+                });
             });
 
-            // Customization Listeners
-            bgColorInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--bg-editor', e.target.value));
-            textColorInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--text-main', e.target.value));
-            fontSelect.addEventListener('change', (e) => document.documentElement.style.setProperty('--font-code', e.target.value));
-            fontSizeInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--font-size', e.target.value + 'px'));
-            lineHeightInput.addEventListener('input', (e) => document.documentElement.style.setProperty('--line-height', e.target.value));
+            // Listen to Inputs
+            inputs.theme.addEventListener('change', e => { 
+                appSettings.theme = e.target.value; 
+                appSettings.bgColor = e.target.value === 'light' ? '#ffffff' : '#18181b';
+                appSettings.textColor = e.target.value === 'light' ? '#18181b' : '#e4e4e7';
+                applySettingsToDOM(); 
+            });
+            inputs.bgColor.addEventListener('input', e => { appSettings.bgColor = e.target.value; applySettingsToDOM(); });
+            inputs.textColor.addEventListener('input', e => { appSettings.textColor = e.target.value; applySettingsToDOM(); });
+            inputs.fontFamily.addEventListener('change', e => { appSettings.fontFamily = e.target.value; applySettingsToDOM(); });
+            inputs.fontSize.addEventListener('input', e => { appSettings.fontSize = e.target.value; applySettingsToDOM(); });
+            inputs.lineHeight.addEventListener('input', e => { appSettings.lineHeight = e.target.value; applySettingsToDOM(); });
 
             /* --- KEYBOARD SHORTCUTS --- */
             document.addEventListener('keydown', (e) => {
@@ -854,14 +997,27 @@
                 if(cmd && e.key.toLowerCase() === 'o') { e.preventDefault(); document.getElementById('btnOpen').click(); }
                 if(cmd && e.key.toLowerCase() === 'f') { e.preventDefault(); document.getElementById('btnFind').click(); }
                 
-                // Escape closes UI overlays
                 if(e.key === 'Escape') {
                     if(findBar.classList.contains('active')) { document.getElementById('btnCloseFind').click(); textarea.focus(); }
                     else if(settingsModal.classList.contains('active')) { document.getElementById('btnCloseSettings').click(); textarea.focus(); }
                 }
             });
 
-            update(); // Init Call
+            /* --- INIT BOOT SEQUENCE --- */
+            applySettingsToDOM();
+            
+            // Restore Workspace if enabled
+            if (appSettings.saveLocal) {
+                const savedText = localStorage.getItem('editpad_text');
+                const savedName = localStorage.getItem('editpad_filename');
+                const savedLang = localStorage.getItem('editpad_lang');
+                
+                if (savedText !== null) textarea.value = savedText;
+                if (savedName) filenameInput.value = savedName;
+                if (savedLang) langSelect.value = savedLang;
+            }
+
+            update(); // Init render
         });
     </script>
 </body>
