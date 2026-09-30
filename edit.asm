@@ -1,6 +1,8 @@
 ; ==============================================================================
 ; EditPad Pro Native — x64 Assembly Windows Code Editor
 ; Built with Microsoft Macro Assembler (ML64) & Win32 API
+; Strictly 16-byte stack aligned across all procedures and calls
+; Callee-saved registers strictly preserved across all callbacks
 ; ==============================================================================
 
 extrn ExitProcess          : proc
@@ -28,24 +30,21 @@ extrn CreateMenu           : proc
 extrn CreatePopupMenu      : proc
 extrn AppendMenuA          : proc
 extrn SetMenu              : proc
-extrn DrawMenuBar          : proc
 extrn GetOpenFileNameA     : proc
 extrn GetSaveFileNameA     : proc
 extrn CreateFileA          : proc
 extrn ReadFile             : proc
 extrn WriteFile            : proc
 extrn CloseHandle          : proc
-extrn GetFileSizeEx        : proc
 extrn MessageBoxA          : proc
 extrn SetWindowTextA       : proc
 extrn GetWindowTextA       : proc
 extrn GetWindowTextLengthA : proc
 extrn wsprintfA            : proc
 extrn lstrlenA             : proc
-extrn lstrcpyA             : proc
 extrn InitCommonControlsEx : proc
 
-; --- Constants ---
+; --- Win32 Constants ---
 WS_OVERLAPPEDWINDOW equ 00CF0000h
 WS_VISIBLE          equ 10000000h
 WS_CHILD            equ 40000000h
@@ -117,6 +116,7 @@ OFN_OVERWRITEPROMPT equ 00000002h
 IDC_ARROW           equ 32512
 
 .data
+align 16
 szClassName         db "EditPadProNativeClass", 0
 szAppTitle          db "EditPad Pro (x64 Assembly Native)", 0
 szEditClass         db "EDIT", 0
@@ -151,11 +151,11 @@ szOpenTitle         db "Open File", 0
 szSaveTitle         db "Save File As", 0
 szDefExt            db "txt", 0
 
-szAboutTitle        db "About EditPad Pro", 0
-szAboutText         db "EditPad Pro Native", 13, 10
-                    db "Engineered in 100% pure 64-bit x64 MASM Assembly.", 13, 10
-                    db "Optimized for speed, low memory footprint, and native Win32 execution.", 13, 10, 13, 10
-                    db "Created for pair-programming and developer productivity.", 0
+szAboutTitle        db "About EditPad Pro Native", 0
+szAboutText         db "EditPad Pro Native — 64-bit Assembly Code Editor", 13, 10
+                    db "100% pure x64 MASM assembly compiled locally on Windows.", 13, 10
+                    db "Features dark-theme editing, status telemetry, and full file I/O.", 13, 10, 13, 10
+                    db "Developed under Professional Software Engineering Standards.", 0
 
 szStatusReady       db "Ready", 0
 szStatusSaved       db "File saved successfully", 0
@@ -167,142 +167,167 @@ fmtChars            db "%d chars", 0
 fmtTitleFile        db "EditPad Pro - [%s]", 0
 
 ; Status bar part boundaries
-sbParts             dd 260, 420, 560, -1
+sbParts             dd 240, 390, 530, -1
 
 .data?
+align 16
 hInstance           dq ?
 hMainWnd            dq ?
 hEditWnd            dq ?
 hStatusWnd          dq ?
 hFont               dq ?
-hBrushBg            dq ?
 hBrushEdit          dq ?
+hMainMenu           dq ?
 
+dwBytesRead         dd ?
+dwBytesWritten      dd ?
+dwSelStart          dd ?
+dwSelEnd            dd ?
+
+align 16
 szCurrentFile       db 260 dup(?)
 szBufferTemp        db 512 dup(?)
 szCursorBuf         db 64 dup(?)
 szCharsBuf          db 64 dup(?)
 
-; 4MB buffer for file I/O
+; Static memory structures to prevent shadow space clobbering
+align 16
+wndClass            db 80 dup(?)
+msg                 db 48 dup(?)
+iccex               db 8 dup(?)
+rcClient            db 16 dup(?)
+rcStatus            db 16 dup(?)
+ofn                 db 152 dup(?)
+
+align 16
 szFileBuffer        db 4194304 dup(?)
 
 .code
 
 ; ==============================================================================
-; Helper: Update Status Bar with Line, Column, and Character Count
+; Helper: Update Status Bar telemetry (Line, Column, Characters)
+; N = 4 pushes (32 bytes) -> sub rsp, 28h (40 bytes) -> (8 - 72) = -64 = 0 mod 16
 ; ==============================================================================
 UpdateStatusBar proc
-    sub rsp, 48h
+    push rbx
+    push r12
+    push r13
+    push r14
+    sub rsp, 28h
 
-    ; 1. Get current selection: EM_GETSEL
+    cmp qword ptr [hEditWnd], 0
+    je UpdateDone
+    cmp qword ptr [hStatusWnd], 0
+    je UpdateDone
+
+    ; 1. Selection position: EM_GETSEL
     mov rcx, hEditWnd
     mov edx, EM_GETSEL
-    lea r8, [rsp + 20h] ; start pos
-    lea r9, [rsp + 28h] ; end pos
+    lea r8, dwSelStart
+    lea r9, dwSelEnd
     call SendMessageA
 
-    mov r8d, dword ptr [rsp + 20h] ; char index
-
-    ; 2. Get line number: EM_LINEFROMCHAR
+    ; 2. Line number from char index: EM_LINEFROMCHAR
     mov rcx, hEditWnd
     mov edx, EM_LINEFROMCHAR
-    ; r8 is already char index
+    mov r8d, dword ptr [dwSelStart]
     xor r9, r9
     call SendMessageA
-    mov r12d, eax ; line (0-based)
-    inc r12d      ; 1-based line
+    mov r12d, eax
+    inc r12d ; 1-based line
 
-    ; 3. Get line start index: EM_LINEINDEX
+    ; 3. Line start char index: EM_LINEINDEX
     mov rcx, hEditWnd
     mov edx, EM_LINEINDEX
-    mov r8d, dword ptr [rsp + 20h]
-    mov rcx, hEditWnd
-    mov edx, EM_LINEFROMCHAR
-    call SendMessageA ; eax = line index
-    mov edx, EM_LINEINDEX
-    mov r8d, eax
-    mov rcx, hEditWnd
-    call SendMessageA ; eax = start char index of current line
+    mov r8d, -1
+    xor r9, r9
+    call SendMessageA
+    mov r13d, dword ptr [dwSelStart]
+    sub r13d, eax
+    inc r13d ; 1-based column
 
-    mov r13d, dword ptr [rsp + 20h]
-    sub r13d, eax ; col offset (0-based)
-    inc r13d      ; 1-based column
-
-    ; Format Cursor: "Ln %d, Col %d"
+    ; Format: "Ln %d, Col %d"
     lea rcx, szCursorBuf
     lea rdx, fmtCursor
     mov r8d, r12d
     mov r9d, r13d
     call wsprintfA
 
-    ; Set Status Part 1
     mov rcx, hStatusWnd
     mov edx, SB_SETTEXTA
     mov r8d, 1
     lea r9, szCursorBuf
     call SendMessageA
 
-    ; 4. Get text length: WM_GETTEXTLENGTH
+    ; 4. Total characters: WM_GETTEXTLENGTH
     mov rcx, hEditWnd
     mov edx, WM_GETTEXTLENGTH
     xor r8, r8
     xor r9, r9
     call SendMessageA
-    mov r14d, eax
 
-    ; Format Chars: "%d chars"
+    ; Format: "%d chars"
     lea rcx, szCharsBuf
     lea rdx, fmtChars
-    mov r8d, r14d
+    mov r8d, eax
     call wsprintfA
 
-    ; Set Status Part 2
     mov rcx, hStatusWnd
     mov edx, SB_SETTEXTA
     mov r8d, 2
     lea r9, szCharsBuf
     call SendMessageA
 
-    add rsp, 48h
+UpdateDone:
+    add rsp, 28h
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
     ret
 UpdateStatusBar endp
 
 ; ==============================================================================
-; Helper: Open File via Common Dialog
+; Helper: Open File via Win32 Common Dialog
+; N = 3 pushes (24 bytes) -> (8 - 24) = -16 = 0 mod 16
+; sub rsp, 50h (80 bytes = 5 * 16) -> (0 - 80) = -80 = 0 mod 16
 ; ==============================================================================
 DoOpenFile proc
-    sub rsp, 0B8h ; 152 bytes for OFN + shadow space
+    push rbx
+    push rsi
+    push rdi
+    sub rsp, 50h
 
-    ; Clear OFN struct
-    lea rdi, [rsp + 20h]
+    ; Zero out ofn struct
+    lea rdi, ofn
     mov ecx, 152
     xor al, al
     rep stosb
 
     ; Setup OPENFILENAMEA
-    lea rdi, [rsp + 20h]
-    mov dword ptr [rdi], 152 ; lStructSize = 152 (0x98)
+    lea rdi, ofn
+    mov dword ptr [rdi], 152
     mov rax, hMainWnd
-    mov qword ptr [rdi + 8], rax ; hwndOwner
+    mov qword ptr [rdi + 8], rax
     mov rax, hInstance
-    mov qword ptr [rdi + 16], rax ; hInstance
+    mov qword ptr [rdi + 16], rax
     lea rax, szFilter
-    mov qword ptr [rdi + 24], rax ; lpstrFilter
+    mov qword ptr [rdi + 24], rax
     lea rax, szCurrentFile
-    mov qword ptr [rdi + 48], rax ; lpstrFile
-    mov dword ptr [rdi + 56], 260 ; nMaxFile
+    mov qword ptr [rdi + 48], rax
+    mov dword ptr [rdi + 56], 260
     lea rax, szOpenTitle
-    mov qword ptr [rdi + 88], rax ; lpstrTitle
-    mov dword ptr [rdi + 96], OFN_FILEMUSTEXIST or OFN_PATHMUSTEXIST ; Flags
+    mov qword ptr [rdi + 88], rax
+    mov dword ptr [rdi + 96], OFN_FILEMUSTEXIST or OFN_PATHMUSTEXIST
     lea rax, szDefExt
-    mov qword ptr [rdi + 104], rax ; lpstrDefExt
+    mov qword ptr [rdi + 104], rax
 
-    lea rcx, [rsp + 20h]
+    lea rcx, ofn
     call GetOpenFileNameA
     test eax, eax
     jz OpenDone
 
-    ; Open the selected file
+    ; Open File
     lea rcx, szCurrentFile
     mov edx, GENERIC_READ
     mov r8d, FILE_SHARE_READ
@@ -313,22 +338,22 @@ DoOpenFile proc
     call CreateFileA
     cmp rax, -1
     je OpenDone
-    mov rbx, rax ; file handle
+    mov rbx, rax
 
-    ; Read file content
+    ; Read content
     mov rcx, rbx
     lea rdx, szFileBuffer
-    mov r8d, 4194300 ; max read bytes
-    lea r9, [rsp + 20h] ; bytes read
-    mov qword ptr [rsp + 28h], 0
+    mov r8d, 4194300
+    lea r9, dwBytesRead
+    mov qword ptr [rsp + 20h], 0
     call ReadFile
 
-    ; Null-terminate buffer
-    mov eax, dword ptr [rsp + 20h]
+    ; Null-terminate
+    mov eax, dword ptr [dwBytesRead]
     lea rdx, szFileBuffer
     mov byte ptr [rdx + rax], 0
 
-    ; Close file handle
+    ; Close handle
     mov rcx, rbx
     call CloseHandle
 
@@ -350,27 +375,41 @@ DoOpenFile proc
     call SetWindowTextA
 
     ; Update status
+    cmp qword ptr [hStatusWnd], 0
+    je SkipStatusOpened
     mov rcx, hStatusWnd
     mov edx, SB_SETTEXTA
     xor r8d, r8d
     lea r9, szStatusOpened
     call SendMessageA
 
+SkipStatusOpened:
     call UpdateStatusBar
 
 OpenDone:
-    add rsp, 0B8h
+    add rsp, 50h
+    pop rdi
+    pop rsi
+    pop rbx
     ret
 DoOpenFile endp
 
 ; ==============================================================================
 ; Helper: Save File
+; ecx = bPromptSaveAs (1 = Save As, 0 = Save)
+; N = 4 pushes (32 bytes) -> (8 - 32) = -24 = 8 mod 16
+; sub rsp, 48h (72 bytes) -> (8 - 32 - 72) = -96 = 0 mod 16
 ; ==============================================================================
-DoSaveFile proc bPromptSaveAs:dword
-    sub rsp, 0B8h
+DoSaveFile proc
+    push rbx
+    push rsi
+    push rdi
+    push r12
+    sub rsp, 48h
 
-    ; If current file is empty or prompt requested, ask for filename
-    cmp bPromptSaveAs, 1
+    mov r12d, ecx ; bPromptSaveAs
+
+    cmp r12d, 1
     je PromptSave
     lea rcx, szCurrentFile
     call lstrlenA
@@ -378,14 +417,13 @@ DoSaveFile proc bPromptSaveAs:dword
     jnz WriteCurrentFile
 
 PromptSave:
-    ; Setup OPENFILENAMEA
-    lea rdi, [rsp + 20h]
+    lea rdi, ofn
     mov ecx, 152
     xor al, al
     rep stosb
 
-    lea rdi, [rsp + 20h]
-    mov dword ptr [rdi], 152 ; lStructSize
+    lea rdi, ofn
+    mov dword ptr [rdi], 152
     mov rax, hMainWnd
     mov qword ptr [rdi + 8], rax
     mov rax, hInstance
@@ -401,27 +439,25 @@ PromptSave:
     lea rax, szDefExt
     mov qword ptr [rdi + 104], rax
 
-    lea rcx, [rsp + 20h]
+    lea rcx, ofn
     call GetSaveFileNameA
     test eax, eax
     jz SaveDone
 
 WriteCurrentFile:
-    ; Get text from edit control
     mov rcx, hEditWnd
     mov edx, WM_GETTEXTLENGTH
     xor r8, r8
     xor r9, r9
     call SendMessageA
-    mov r12d, eax ; length
+    mov esi, eax ; length of text in chars
 
     mov rcx, hEditWnd
     mov edx, WM_GETTEXT
-    lea r8d, [r12d + 1]
+    lea r8d, [rsi + 1]
     lea r9, szFileBuffer
     call SendMessageA
 
-    ; Create or overwrite file
     lea rcx, szCurrentFile
     mov edx, GENERIC_WRITE
     xor r8d, r8d
@@ -432,21 +468,18 @@ WriteCurrentFile:
     call CreateFileA
     cmp rax, -1
     je SaveDone
-    mov rbx, rax ; file handle
+    mov rbx, rax
 
-    ; Write file
     mov rcx, rbx
     lea rdx, szFileBuffer
-    mov r8d, r12d
-    lea r9, [rsp + 20h] ; bytes written
-    mov qword ptr [rsp + 28h], 0
+    mov r8d, esi
+    lea r9, dwBytesWritten
+    mov qword ptr [rsp + 20h], 0
     call WriteFile
 
-    ; Close handle
     mov rcx, rbx
     call CloseHandle
 
-    ; Update window title
     lea rcx, szBufferTemp
     lea rdx, fmtTitleFile
     lea r8, szCurrentFile
@@ -456,7 +489,8 @@ WriteCurrentFile:
     lea rdx, szBufferTemp
     call SetWindowTextA
 
-    ; Update status
+    cmp qword ptr [hStatusWnd], 0
+    je SaveDone
     mov rcx, hStatusWnd
     mov edx, SB_SETTEXTA
     xor r8d, r8d
@@ -464,349 +498,32 @@ WriteCurrentFile:
     call SendMessageA
 
 SaveDone:
-    add rsp, 0B8h
+    add rsp, 48h
+    pop r12
+    pop rdi
+    pop rsi
+    pop rbx
     ret
 DoSaveFile endp
 
 ; ==============================================================================
-; Window Procedure
-; ==============================================================================
-WndProc proc hWnd:dq, uMsg:dword, wParam:dq, lParam:dq
-    sub rsp, 68h
-
-    cmp edx, WM_CREATE
-    je OnCreate
-    cmp edx, WM_SIZE
-    je OnSize
-    cmp edx, WM_COMMAND
-    je OnCommand
-    cmp edx, WM_SETFOCUS
-    je OnSetFocus
-    cmp edx, WM_CTLCOLOREDIT
-    je OnCtlColor
-    cmp edx, WM_CTLCOLORSTATIC
-    je OnCtlColor
-    cmp edx, WM_DESTROY
-    je OnDestroy
-
-    call DefWindowProcA
-    add rsp, 68h
-    ret
-
-OnCreate:
-    ; 1. Create Monospace Font ("Consolas", height 18)
-    mov dword ptr [rsp + 20h], 0 ; dwWeight = FW_DONTCARE
-    mov dword ptr [rsp + 28h], 0 ; bItalic = FALSE
-    mov dword ptr [rsp + 30h], 0 ; bUnderline = FALSE
-    mov dword ptr [rsp + 38h], 0 ; bStrikeOut = FALSE
-    mov dword ptr [rsp + 40h], 0 ; ANSI_CHARSET
-    mov dword ptr [rsp + 48h], 0 ; OUT_DEFAULT_PRECIS
-    mov dword ptr [rsp + 50h], 0 ; CLIP_DEFAULT_PRECIS
-    mov dword ptr [rsp + 58h], 0 ; DEFAULT_QUALITY
-    mov dword ptr [rsp + 60h], 0 ; FIXED_PITCH
-    mov ecx, 18                 ; nHeight
-    xor edx, edx                ; nWidth
-    xor r8d, r8d                ; nEscapement
-    xor r9d, r9d                ; nOrientation
-    lea rax, szFontName
-    mov qword ptr [rsp + 68h], rax ; lpFaceName
-    call CreateFontA
-    mov hFont, rax
-
-    ; 2. Create dark background brushes (Zinc theme: #18181b = 0x001B1818)
-    mov ecx, 001B1818h
-    call CreateSolidBrush
-    mov hBrushEdit, rax
-
-    mov ecx, 00141414h
-    call CreateSolidBrush
-    mov hBrushBg, rax
-
-    ; 3. Create Multi-line EDIT Control
-    xor ecx, ecx ; dwExStyle
-    lea rdx, szEditClass
-    xor r8, r8 ; window name
-    mov r9d, WS_CHILD or WS_VISIBLE or WS_VSCROLL or WS_HSCROLL or ES_MULTILINE or ES_AUTOVSCROLL or ES_AUTOHSCROLL or ES_WANTRETURN or ES_NOHIDESEL
-    mov dword ptr [rsp + 20h], 0 ; X
-    mov dword ptr [rsp + 28h], 0 ; Y
-    mov dword ptr [rsp + 30h], 100 ; width
-    mov dword ptr [rsp + 38h], 100 ; height
-    mov rax, hWnd
-    mov qword ptr [rsp + 40h], rax ; parent
-    mov qword ptr [rsp + 48h], 100 ; hMenu (child ID)
-    mov rax, hInstance
-    mov qword ptr [rsp + 50h], rax
-    mov qword ptr [rsp + 58h], 0
-    call CreateWindowExA
-    mov hEditWnd, rax
-
-    ; Set Edit Font
-    mov rcx, hEditWnd
-    mov edx, WM_SETFONT
-    mov r8, hFont
-    mov r9d, 1
-    call SendMessageA
-
-    ; 4. Create Status Bar
-    xor ecx, ecx
-    lea rdx, szStatusClass
-    xor r8, r8
-    mov r9d, WS_CHILD or WS_VISIBLE
-    mov dword ptr [rsp + 20h], 0
-    mov dword ptr [rsp + 28h], 0
-    mov dword ptr [rsp + 30h], 0
-    mov dword ptr [rsp + 38h], 0
-    mov rax, hWnd
-    mov qword ptr [rsp + 40h], rax
-    mov qword ptr [rsp + 48h], 101 ; status ID
-    mov rax, hInstance
-    mov qword ptr [rsp + 50h], rax
-    mov qword ptr [rsp + 58h], 0
-    call CreateWindowExA
-    mov hStatusWnd, rax
-
-    ; Configure Status Bar Parts
-    mov rcx, hStatusWnd
-    mov edx, SB_SETPARTS
-    mov r8d, 4
-    lea r9, sbParts
-    call SendMessageA
-
-    ; Set Initial Status Texts
-    mov rcx, hStatusWnd
-    mov edx, SB_SETTEXTA
-    xor r8d, r8d
-    lea r9, szStatusReady
-    call SendMessageA
-
-    mov rcx, hStatusWnd
-    mov edx, SB_SETTEXTA
-    mov r8d, 3
-    lea r9, szStatusArch
-    call SendMessageA
-
-    call UpdateStatusBar
-    xor eax, eax
-    add rsp, 68h
-    ret
-
-OnSize:
-    ; Resize Edit Control and Status Bar
-    ; lParam contains loword(width) and hiword(height)
-    mov r12, r9 ; lParam
-    movzx r13d, r12w ; width
-    shr r12, 16
-    movzx r14d, r12w ; height
-
-    ; Resize Status Bar
-    mov rcx, hStatusWnd
-    mov edx, WM_SIZE
-    xor r8, r8
-    xor r9, r9
-    call SendMessageA
-
-    ; Get client rect of status bar to know its height
-    lea rdx, [rsp + 20h] ; RECT struct
-    mov rcx, hStatusWnd
-    call GetClientRect
-    mov eax, dword ptr [rsp + 2Ch] ; status rect.bottom
-    sub r14d, eax ; editHeight = clientHeight - statusHeight
-
-    ; Move and resize Edit control
-    mov rcx, hEditWnd
-    xor edx, edx ; X=0
-    xor r8d, r8d ; Y=0
-    mov r9d, r13d ; width
-    mov dword ptr [rsp + 20h], r14d ; height
-    mov dword ptr [rsp + 28h], 1 ; repaint
-    call MoveWindow
-
-    xor eax, eax
-    add rsp, 68h
-    ret
-
-OnCommand:
-    ; wParam: loword = ID, hiword = notification code
-    mov r12, r8 ; wParam
-    movzx r13d, r12w ; command ID
-    shr r12, 16 ; notification code
-
-    ; Check if Edit control changed/updated
-    cmp r13d, 100 ; child ID of Edit control
-    jne CheckMenu
-    cmp r12w, EN_UPDATE
-    je HandleEditUpdate
-    cmp r12w, EN_CHANGE
-    je HandleEditUpdate
-    jmp CmdDone
-
-HandleEditUpdate:
-    call UpdateStatusBar
-    jmp CmdDone
-
-CheckMenu:
-    cmp r13d, IDM_FILE_NEW
-    je MenuFileNew
-    cmp r13d, IDM_FILE_OPEN
-    je MenuFileOpen
-    cmp r13d, IDM_FILE_SAVE
-    je MenuFileSave
-    cmp r13d, IDM_FILE_SAVEAS
-    je MenuFileSaveAs
-    cmp r13d, IDM_FILE_EXIT
-    je MenuFileExit
-    cmp r13d, IDM_EDIT_UNDO
-    je MenuEditUndo
-    cmp r13d, IDM_EDIT_CUT
-    je MenuEditCut
-    cmp r13d, IDM_EDIT_COPY
-    je MenuEditCopy
-    cmp r13d, IDM_EDIT_PASTE
-    je MenuEditPaste
-    cmp r13d, IDM_EDIT_SELECTALL
-    je MenuEditSelectAll
-    cmp r13d, IDM_HELP_ABOUT
-    je MenuHelpAbout
-    jmp CmdDone
-
-MenuFileNew:
-    mov rcx, hEditWnd
-    mov edx, WM_SETTEXT
-    xor r8, r8
-    lea r9, [szStatusReady + 5] ; points to null terminator
-    call SendMessageA
-    mov byte ptr [szCurrentFile], 0
-    mov rcx, hMainWnd
-    lea rdx, szAppTitle
-    call SetWindowTextA
-    call UpdateStatusBar
-    jmp CmdDone
-
-MenuFileOpen:
-    call DoOpenFile
-    jmp CmdDone
-
-MenuFileSave:
-    xor ecx, ecx
-    call DoSaveFile
-    jmp CmdDone
-
-MenuFileSaveAs:
-    mov ecx, 1
-    call DoSaveFile
-    jmp CmdDone
-
-MenuFileExit:
-    mov rcx, hWnd
-    mov edx, WM_DESTROY
-    xor r8, r8
-    xor r9, r9
-    call SendMessageA
-    jmp CmdDone
-
-MenuEditUndo:
-    mov rcx, hEditWnd
-    mov edx, EM_UNDO
-    xor r8, r8
-    xor r9, r9
-    call SendMessageA
-    jmp CmdDone
-
-MenuEditCut:
-    mov rcx, hEditWnd
-    mov edx, WM_CUT
-    xor r8, r8
-    xor r9, r9
-    call SendMessageA
-    jmp CmdDone
-
-MenuEditCopy:
-    mov rcx, hEditWnd
-    mov edx, WM_COPY
-    xor r8, r8
-    xor r9, r9
-    call SendMessageA
-    jmp CmdDone
-
-MenuEditPaste:
-    mov rcx, hEditWnd
-    mov edx, WM_PASTE
-    xor r8, r8
-    xor r9, r9
-    call SendMessageA
-    jmp CmdDone
-
-MenuEditSelectAll:
-    mov rcx, hEditWnd
-    mov edx, EM_SETSEL
-    xor r8, r8
-    mov r9, -1
-    call SendMessageA
-    jmp CmdDone
-
-MenuHelpAbout:
-    mov rcx, hWnd
-    lea rdx, szAboutText
-    lea r8, szAboutTitle
-    mov r9d, 40h ; MB_OK | MB_ICONINFORMATION
-    call MessageBoxA
-    jmp CmdDone
-
-CmdDone:
-    xor eax, eax
-    add rsp, 68h
-    ret
-
-OnSetFocus:
-    mov rcx, hEditWnd
-    call SetFocus
-    xor eax, eax
-    add rsp, 68h
-    ret
-
-OnCtlColor:
-    ; Dark theme for Edit Control
-    ; wParam = HDC
-    mov rcx, r8 ; hdc
-    mov edx, 00E7E4E4h ; text color: light zinc (#e4e4e7 in BGR: 0x00E7E4E4)
-    call SetTextColor
-
-    mov rcx, r8 ; hdc
-    mov edx, 001B1818h ; bk color: dark zinc (#18181b in BGR: 0x001B1818)
-    call SetBkColor
-
-    mov rax, hBrushEdit ; return background brush
-    add rsp, 68h
-    ret
-
-OnDestroy:
-    mov rcx, hBrushEdit
-    call DeleteObject
-    mov rcx, hBrushBg
-    call DeleteObject
-    mov rcx, hFont
-    call DeleteObject
-
-    xor ecx, ecx
-    call PostQuitMessage
-    xor eax, eax
-    add rsp, 68h
-    ret
-
-WndProc endp
-
-; ==============================================================================
 ; Helper: Build Menu Bar
+; N = 4 pushes (32 bytes) -> (8 - 32) = -24 = 8 mod 16
+; sub rsp, 28h (40 bytes) -> (8 - 32 - 40) = -64 = 0 mod 16
 ; ==============================================================================
 BuildMenuBar proc
-    sub rsp, 48h
+    push rbx
+    push r12
+    push r13
+    push r14
+    sub rsp, 28h
 
     call CreateMenu
-    mov rbx, rax ; hMainMenu
+    mov rbx, rax ; Main menu
 
     ; 1. File Popup
     call CreatePopupMenu
-    mov r12, rax ; hFileMenu
+    mov r12, rax
 
     mov rcx, r12
     xor edx, edx
@@ -852,7 +569,7 @@ BuildMenuBar proc
 
     ; 2. Edit Popup
     call CreatePopupMenu
-    mov r13, rax ; hEditMenu
+    mov r13, rax
 
     mov rcx, r13
     xor edx, edx
@@ -904,7 +621,7 @@ BuildMenuBar proc
 
     ; 3. Help Popup
     call CreatePopupMenu
-    mov r14, rax ; hHelpMenu
+    mov r14, rax
 
     mov rcx, r14
     xor edx, edx
@@ -919,74 +636,440 @@ BuildMenuBar proc
     call AppendMenuA
 
     mov rax, rbx
-    add rsp, 48h
+    add rsp, 28h
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
     ret
 BuildMenuBar endp
 
 ; ==============================================================================
-; Main Entry Point
+; Window Procedure (100% Callee-Saved Register Adherence & 16-byte Alignment)
+; rcx = hWnd, edx = uMsg, r8 = wParam, r9 = lParam
+; N = 7 pushes (56 bytes) -> (8 - 56) = -48 = 0 mod 16
+; sub rsp, 80h (128 bytes = 8 * 16) -> (0 - 128) = -128 = 0 mod 16
 ; ==============================================================================
-main proc
-    sub rsp, 98h
+WndProc proc
+    push rbx
+    push rsi
+    push rdi
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 80h
 
-    ; Initialize Common Controls (Status Bar)
-    lea rdi, [rsp + 20h]
-    mov dword ptr [rdi], 8 ; dwSize
-    mov dword ptr [rdi + 4], 00000004h ; ICC_BAR_CLASSES
-    lea rcx, [rsp + 20h]
-    call InitCommonControlsEx
+    mov r12, rcx  ; hWnd
+    mov r13d, edx ; uMsg
+    mov r14, r8   ; wParam
+    mov r15, r9   ; lParam
 
-    ; Get HINSTANCE
+    cmp r13d, WM_CREATE
+    je OnCreate
+    cmp r13d, WM_SIZE
+    je OnSize
+    cmp r13d, WM_COMMAND
+    je OnCommand
+    cmp r13d, WM_SETFOCUS
+    je OnSetFocus
+    cmp r13d, WM_CTLCOLOREDIT
+    je OnCtlColor
+    cmp r13d, WM_CTLCOLORSTATIC
+    je OnCtlColor
+    cmp r13d, WM_DESTROY
+    je OnDestroy
+
+    ; Default handler with preserved arguments
+    mov rcx, r12
+    mov edx, r13d
+    mov r8, r14
+    mov r9, r15
+    call DefWindowProcA
+    jmp ProcReturn
+
+OnCreate:
+    ; 1. Create Monospace Font ("Consolas", height 19)
+    mov ecx, 19
+    xor edx, edx
+    xor r8d, r8d
+    xor r9d, r9d
+    mov qword ptr [rsp + 20h], 400
+    mov qword ptr [rsp + 28h], 0
+    mov qword ptr [rsp + 30h], 0
+    mov qword ptr [rsp + 38h], 0
+    mov qword ptr [rsp + 40h], 0
+    mov qword ptr [rsp + 48h], 0
+    mov qword ptr [rsp + 50h], 0
+    mov qword ptr [rsp + 58h], 0
+    mov qword ptr [rsp + 60h], 0
+    lea rax, szFontName
+    mov qword ptr [rsp + 68h], rax
+    call CreateFontA
+    mov hFont, rax
+
+    ; 2. Create Dark Theme Brush (#18181b in BGR = 0x001B1818)
+    mov ecx, 001B1818h
+    call CreateSolidBrush
+    mov hBrushEdit, rax
+
+    ; 3. Create Multi-line EDIT Control
     xor ecx, ecx
-    call GetModuleHandleA
-    mov hInstance, rax
-
-    ; Register WNDCLASSEXA (80 bytes)
-    lea rdi, [rsp + 20h]
-    mov dword ptr [rdi], 80 ; cbSize
-    mov dword ptr [rdi + 4], 3 ; CS_HREDRAW | CS_VREDRAW
-    lea rax, WndProc
-    mov qword ptr [rdi + 8], rax
-    mov dword ptr [rdi + 16], 0 ; cbClsExtra
-    mov dword ptr [rdi + 20], 0 ; cbWndExtra
-    mov rax, hInstance
-    mov qword ptr [rdi + 24], rax
-    mov qword ptr [rdi + 32], 0 ; hIcon
-    xor ecx, ecx
-    mov edx, IDC_ARROW
-    call LoadCursorA
-    mov qword ptr [rdi + 40], rax ; hCursor
-    mov qword ptr [rdi + 48], 0 ; hbrBackground (handled in WM_CTLCOLOR)
-    mov qword ptr [rdi + 56], 0 ; lpszMenuName
-    lea rax, szClassName
-    mov qword ptr [rdi + 64], rax
-    mov qword ptr [rdi + 72], 0 ; hIconSm
-
-    lea rcx, [rsp + 20h]
-    call RegisterClassExA
-
-    ; Build Menu Bar
-    call BuildMenuBar
-    mov r15, rax ; hMenu
-
-    ; Create Main Window
-    xor ecx, ecx ; dwExStyle
-    lea rdx, szClassName
-    lea r8, szAppTitle
-    mov r9d, WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_CLIPCHILDREN
-    mov dword ptr [rsp + 20h], 80000000h ; CW_USEDEFAULT
-    mov dword ptr [rsp + 28h], 80000000h ; CW_USEDEFAULT
-    mov dword ptr [rsp + 30h], 960 ; nWidth
-    mov dword ptr [rsp + 38h], 640 ; nHeight
-    mov qword ptr [rsp + 40h], 0 ; hWndParent
-    mov qword ptr [rsp + 48h], r15 ; hMenu
+    lea rdx, szEditClass
+    xor r8, r8
+    mov r9d, WS_CHILD or WS_VISIBLE or WS_VSCROLL or WS_HSCROLL or ES_MULTILINE or ES_AUTOVSCROLL or ES_AUTOHSCROLL or ES_WANTRETURN or ES_NOHIDESEL
+    mov qword ptr [rsp + 20h], 0
+    mov qword ptr [rsp + 28h], 0
+    mov qword ptr [rsp + 30h], 100
+    mov qword ptr [rsp + 38h], 100
+    mov rax, r12
+    mov qword ptr [rsp + 40h], rax
+    mov qword ptr [rsp + 48h], 100 ; child ID
     mov rax, hInstance
     mov qword ptr [rsp + 50h], rax
     mov qword ptr [rsp + 58h], 0
     call CreateWindowExA
+    mov hEditWnd, rax
+
+    ; Apply Font to Edit Control
+    mov rcx, hEditWnd
+    mov edx, WM_SETFONT
+    mov r8, hFont
+    mov r9d, 1
+    call SendMessageA
+
+    ; 4. Create Status Bar
+    xor ecx, ecx
+    lea rdx, szStatusClass
+    xor r8, r8
+    mov r9d, WS_CHILD or WS_VISIBLE
+    mov qword ptr [rsp + 20h], 0
+    mov qword ptr [rsp + 28h], 0
+    mov qword ptr [rsp + 30h], 0
+    mov qword ptr [rsp + 38h], 0
+    mov rax, r12
+    mov qword ptr [rsp + 40h], rax
+    mov qword ptr [rsp + 48h], 101 ; status ID
+    mov rax, hInstance
+    mov qword ptr [rsp + 50h], rax
+    mov qword ptr [rsp + 58h], 0
+    call CreateWindowExA
+    mov hStatusWnd, rax
+
+    cmp qword ptr [hStatusWnd], 0
+    je CreateDone
+
+    mov rcx, hStatusWnd
+    mov edx, SB_SETPARTS
+    mov r8d, 4
+    lea r9, sbParts
+    call SendMessageA
+
+    mov rcx, hStatusWnd
+    mov edx, SB_SETTEXTA
+    xor r8d, r8d
+    lea r9, szStatusReady
+    call SendMessageA
+
+    mov rcx, hStatusWnd
+    mov edx, SB_SETTEXTA
+    mov r8d, 3
+    lea r9, szStatusArch
+    call SendMessageA
+
+    call UpdateStatusBar
+
+CreateDone:
+    xor eax, eax
+    jmp ProcReturn
+
+OnSize:
+    cmp qword ptr [hEditWnd], 0
+    je SizeDone
+
+    ; Resize Status Bar if it exists
+    cmp qword ptr [hStatusWnd], 0
+    je ResizeEditOnly
+
+    mov rcx, hStatusWnd
+    mov edx, WM_SIZE
+    xor r8, r8
+    xor r9, r9
+    call SendMessageA
+
+    ; Get status bar height
+    mov rcx, hStatusWnd
+    lea rdx, rcStatus
+    call GetClientRect
+
+ResizeEditOnly:
+    ; Get client rect of main window
+    mov rcx, r12
+    lea rdx, rcClient
+    call GetClientRect
+
+    mov r14d, dword ptr [rcClient + 8]   ; total client width
+    mov r15d, dword ptr [rcClient + 12]  ; total client height
+
+    cmp qword ptr [hStatusWnd], 0
+    je DoMoveEdit
+    sub r15d, dword ptr [rcStatus + 12]  ; editHeight = clientHeight - statusHeight
+
+DoMoveEdit:
+    ; MoveWindow(hEditWnd, 0, 0, width, height, TRUE)
+    mov rcx, hEditWnd
+    xor edx, edx                        ; X = 0
+    xor r8d, r8d                        ; Y = 0
+    mov r9d, r14d                       ; nWidth
+    movsxd rax, r15d
+    mov qword ptr [rsp + 20h], rax     ; nHeight
+    mov qword ptr [rsp + 28h], 1        ; bRepaint = TRUE
+    call MoveWindow
+
+SizeDone:
+    xor eax, eax
+    jmp ProcReturn
+
+OnCommand:
+    mov rbx, r14
+    movzx edi, bx ; command ID
+    shr rbx, 16   ; notification code
+
+    cmp edi, 100  ; Edit control notification
+    jne CheckMenuCmd
+    cmp bx, EN_UPDATE
+    je HandleEditChange
+    cmp bx, EN_CHANGE
+    je HandleEditChange
+    jmp CmdDone
+
+HandleEditChange:
+    call UpdateStatusBar
+    jmp CmdDone
+
+CheckMenuCmd:
+    cmp edi, IDM_FILE_NEW
+    je MenuFileNew
+    cmp edi, IDM_FILE_OPEN
+    je MenuFileOpen
+    cmp edi, IDM_FILE_SAVE
+    je MenuFileSave
+    cmp edi, IDM_FILE_SAVEAS
+    je MenuFileSaveAs
+    cmp edi, IDM_FILE_EXIT
+    je MenuFileExit
+    cmp edi, IDM_EDIT_UNDO
+    je MenuEditUndo
+    cmp edi, IDM_EDIT_CUT
+    je MenuEditCut
+    cmp edi, IDM_EDIT_COPY
+    je MenuEditCopy
+    cmp edi, IDM_EDIT_PASTE
+    je MenuEditPaste
+    cmp edi, IDM_EDIT_SELECTALL
+    je MenuEditSelectAll
+    cmp edi, IDM_HELP_ABOUT
+    je MenuHelpAbout
+    jmp CmdDone
+
+MenuFileNew:
+    mov rcx, hEditWnd
+    mov edx, WM_SETTEXT
+    xor r8, r8
+    lea r9, [szStatusReady + 5] ; null string
+    call SendMessageA
+    mov byte ptr [szCurrentFile], 0
+    mov rcx, hMainWnd
+    lea rdx, szAppTitle
+    call SetWindowTextA
+    call UpdateStatusBar
+    jmp CmdDone
+
+MenuFileOpen:
+    call DoOpenFile
+    jmp CmdDone
+
+MenuFileSave:
+    xor ecx, ecx
+    call DoSaveFile
+    jmp CmdDone
+
+MenuFileSaveAs:
+    mov ecx, 1
+    call DoSaveFile
+    jmp CmdDone
+
+MenuFileExit:
+    mov rcx, r12
+    mov edx, WM_DESTROY
+    xor r8, r8
+    xor r9, r9
+    call SendMessageA
+    jmp CmdDone
+
+MenuEditUndo:
+    mov rcx, hEditWnd
+    mov edx, EM_UNDO
+    xor r8, r8
+    xor r9, r9
+    call SendMessageA
+    jmp CmdDone
+
+MenuEditCut:
+    mov rcx, hEditWnd
+    mov edx, WM_CUT
+    xor r8, r8
+    xor r9, r9
+    call SendMessageA
+    jmp CmdDone
+
+MenuEditCopy:
+    mov rcx, hEditWnd
+    mov edx, WM_COPY
+    xor r8, r8
+    xor r9, r9
+    call SendMessageA
+    jmp CmdDone
+
+MenuEditPaste:
+    mov rcx, hEditWnd
+    mov edx, WM_PASTE
+    xor r8, r8
+    xor r9, r9
+    call SendMessageA
+    jmp CmdDone
+
+MenuEditSelectAll:
+    mov rcx, hEditWnd
+    mov edx, EM_SETSEL
+    xor r8, r8
+    mov r9, -1
+    call SendMessageA
+    jmp CmdDone
+
+MenuHelpAbout:
+    mov rcx, r12
+    lea rdx, szAboutText
+    lea r8, szAboutTitle
+    mov r9d, 40h ; MB_OK | MB_ICONINFORMATION
+    call MessageBoxA
+    jmp CmdDone
+
+CmdDone:
+    xor eax, eax
+    jmp ProcReturn
+
+OnSetFocus:
+    cmp qword ptr [hEditWnd], 0
+    je FocusDone
+    mov rcx, hEditWnd
+    call SetFocus
+FocusDone:
+    xor eax, eax
+    jmp ProcReturn
+
+OnCtlColor:
+    ; Custom dark theme for Edit control
+    mov rcx, r14 ; HDC
+    mov edx, 00E7E4E4h ; text color: #e4e4e7
+    call SetTextColor
+
+    mov rcx, r14
+    mov edx, 001B1818h ; bk color: #18181b
+    call SetBkColor
+
+    mov rax, hBrushEdit
+    jmp ProcReturn
+
+OnDestroy:
+    mov rcx, hBrushEdit
+    call DeleteObject
+    mov rcx, hFont
+    call DeleteObject
+
+    xor ecx, ecx
+    call PostQuitMessage
+    xor eax, eax
+
+ProcReturn:
+    add rsp, 80h
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rdi
+    pop rsi
+    pop rbx
+    ret
+WndProc endp
+
+; ==============================================================================
+; Application Entry Point
+; Entry from OS loader: RSP % 16 == 8
+; sub rsp, 78h (120 bytes) -> (8 - 120) = -112 = 0 mod 16
+; ==============================================================================
+main proc
+    sub rsp, 78h
+
+    ; Initialize Common Controls (Status Bar)
+    lea rdi, iccex
+    mov dword ptr [rdi], 8
+    mov dword ptr [rdi + 4], 4 ; ICC_BAR_CLASSES
+    lea rcx, iccex
+    call InitCommonControlsEx
+
+    ; Obtain Module Handle
+    xor ecx, ecx
+    call GetModuleHandleA
+    mov hInstance, rax
+
+    ; Setup WNDCLASSEX in static memory
+    lea rdi, wndClass
+    mov dword ptr [rdi], 80 ; cbSize
+    mov dword ptr [rdi + 4], 3 ; CS_HREDRAW | CS_VREDRAW
+    lea rax, WndProc
+    mov qword ptr [rdi + 8], rax
+    mov dword ptr [rdi + 16], 0
+    mov dword ptr [rdi + 20], 0
+    mov rax, hInstance
+    mov qword ptr [rdi + 24], rax
+    mov qword ptr [rdi + 32], 0
+    xor ecx, ecx
+    mov edx, IDC_ARROW
+    call LoadCursorA
+    mov qword ptr [wndClass + 40], rax
+    mov qword ptr [wndClass + 48], 0
+    mov qword ptr [wndClass + 56], 0
+    lea rax, szClassName
+    mov qword ptr [wndClass + 64], rax
+    mov qword ptr [wndClass + 72], 0
+
+    lea rcx, wndClass
+    call RegisterClassExA
+
+    ; Build Native Menu Bar
+    call BuildMenuBar
+    mov hMainMenu, rax
+
+    ; Create Main Window
+    xor ecx, ecx
+    lea rdx, szClassName
+    lea r8, szAppTitle
+    mov r9d, WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_CLIPCHILDREN
+    mov qword ptr [rsp + 20h], 80000000h ; CW_USEDEFAULT
+    mov qword ptr [rsp + 28h], 80000000h ; CW_USEDEFAULT
+    mov qword ptr [rsp + 30h], 960         ; nWidth
+    mov qword ptr [rsp + 38h], 640         ; nHeight
+    mov qword ptr [rsp + 40h], 0           ; hWndParent
+    mov rax, hMainMenu
+    mov qword ptr [rsp + 48h], rax         ; hMenu
+    mov rax, hInstance
+    mov qword ptr [rsp + 50h], rax         ; hInstance
+    mov qword ptr [rsp + 58h], 0           ; lpParam
+    call CreateWindowExA
     mov hMainWnd, rax
 
-    ; Show & Update Window
+    ; Display & Update Window
     mov rcx, hMainWnd
     mov edx, 5 ; SW_SHOW
     call ShowWindow
@@ -994,13 +1077,12 @@ main proc
     mov rcx, hMainWnd
     call UpdateWindow
 
-    ; Set initial focus to Edit control
     mov rcx, hEditWnd
     call SetFocus
 
-    ; Message Loop
+    ; Standard Win32 Message Loop
 MsgLoop:
-    lea rcx, [rsp + 20h]
+    lea rcx, msg
     xor edx, edx
     xor r8d, r8d
     xor r9d, r9d
@@ -1008,9 +1090,9 @@ MsgLoop:
     test eax, eax
     jle ExitLoop
 
-    lea rcx, [rsp + 20h]
+    lea rcx, msg
     call TranslateMessage
-    lea rcx, [rsp + 20h]
+    lea rcx, msg
     call DispatchMessageA
     jmp MsgLoop
 
