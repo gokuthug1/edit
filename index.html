@@ -1132,7 +1132,102 @@
             .btn-label { display: none; }
             .badge-arch { display: none; }
             .status-group:nth-child(2) { display: none; }
-            .find-panel { width: calc(100vw - 32px); right: 16px; }
+        /* ==========================================================================
+           DESKTOP CONTEXT MENU — Solid Surfaces, Zero Gradients, Accessible Focus
+           ========================================================================== */
+        .context-menu {
+            position: fixed;
+            z-index: 10000;
+            min-width: 224px;
+            background: var(--bg-surface-raised);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+            padding: 4px 0;
+            display: none;
+            flex-direction: column;
+            outline: none;
+            user-select: none;
+            animation: contextMenuFadeIn 0.08s ease-out;
+        }
+
+        .context-menu.active {
+            display: flex;
+        }
+
+        @keyframes contextMenuFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 450;
+            color: var(--text-primary);
+            cursor: pointer;
+            outline: none;
+            border-radius: var(--radius-sm);
+            margin: 1px 4px;
+            transition: background-color 0.06s ease, color 0.06s ease;
+        }
+
+        .context-menu-item:hover,
+        .context-menu-item:focus,
+        .context-menu-item.focus {
+            background: var(--color-accent-subtle);
+            color: var(--text-primary);
+        }
+
+        .context-menu-item:active {
+            background: var(--bg-surface-active);
+        }
+
+        .context-menu-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .context-menu-icon {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            color: var(--text-secondary);
+        }
+
+        .context-menu-item:hover .context-menu-icon,
+        .context-menu-item:focus .context-menu-icon,
+        .context-menu-item.focus .context-menu-icon {
+            color: var(--color-accent);
+        }
+
+        .context-menu-label {
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        .context-menu-shortcut {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            margin-left: 16px;
+            white-space: nowrap;
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 4px 0;
         }
     </style>
 </head>
@@ -1412,6 +1507,80 @@
 
         <!-- Global Tooltip Element -->
         <div class="app-tooltip" id="appTooltip" aria-hidden="true"></div>
+
+        <!-- Custom Desktop Context Menu -->
+        <div class="context-menu" id="contextMenu" role="menu" aria-label="Editor Context Menu" tabindex="-1">
+            <div class="context-menu-item" role="menuitem" data-action="undo" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                <span class="context-menu-label">Undo</span>
+                <span class="context-menu-shortcut">Ctrl+Z</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="redo" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+                <span class="context-menu-label">Redo</span>
+                <span class="context-menu-shortcut">Ctrl+Y</span>
+            </div>
+            <div class="context-menu-separator" role="separator"></div>
+            <div class="context-menu-item" role="menuitem" data-action="cut" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                <span class="context-menu-label">Cut</span>
+                <span class="context-menu-shortcut">Ctrl+X</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="copy" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span class="context-menu-label">Copy</span>
+                <span class="context-menu-shortcut">Ctrl+C</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="paste" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+                <span class="context-menu-label">Paste</span>
+                <span class="context-menu-shortcut">Ctrl+V</span>
+            </div>
+            <div class="context-menu-separator" role="separator"></div>
+            <div class="context-menu-item" role="menuitem" data-action="select-all" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
+                <span class="context-menu-label">Select All</span>
+                <span class="context-menu-shortcut">Ctrl+A</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="find" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span class="context-menu-label">Find & Replace</span>
+                <span class="context-menu-shortcut">Ctrl+F</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="goto" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                <span class="context-menu-label">Go to Line...</span>
+                <span class="context-menu-shortcut">Ctrl+G</span>
+            </div>
+            <div class="context-menu-separator" role="separator"></div>
+            <div class="context-menu-item" role="menuitem" data-action="comment" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="context-menu-label">Toggle Line Comment</span>
+                <span class="context-menu-shortcut">Ctrl+/</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="wrap" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><polyline points="16 10 19 12 16 14"/><path d="M19 12a4 4 0 0 1-4 4H3"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <span class="context-menu-label">Toggle Word Wrap</span>
+                <span class="context-menu-shortcut">Alt+Z</span>
+            </div>
+            <div class="context-menu-separator" role="separator"></div>
+            <div class="context-menu-item" role="menuitem" data-action="new-tab" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="context-menu-label">New Document</span>
+                <span class="context-menu-shortcut">Ctrl+N</span>
+            </div>
+            <div class="context-menu-item" role="menuitem" data-action="save" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span class="context-menu-label">Save File</span>
+                <span class="context-menu-shortcut">Ctrl+S</span>
+            </div>
+            <div class="context-menu-separator" role="separator"></div>
+            <div class="context-menu-item" role="menuitem" data-action="settings" tabindex="-1">
+                <svg class="context-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span class="context-menu-label">Preferences</span>
+                <span class="context-menu-shortcut">Alt+,</span>
+            </div>
+        </div>
     </div>
 
     <!-- ==========================================================================
@@ -2767,6 +2936,210 @@
             document.getElementById('btnSave').addEventListener('click', saveFile);
             document.getElementById('btnFind').addEventListener('click', () => toggleFindPanel());
 
+            // =========================================================================
+            // DESKTOP CONTEXT MENU CONTROLLER
+            // =========================================================================
+            const contextMenu = document.getElementById('contextMenu');
+            let activeContextIndex = -1;
+
+            function showContextMenu(x, y) {
+                // Check selection state to dynamically enable/disable Cut and Copy
+                const hasSelection = textarea.selectionStart !== textarea.selectionEnd;
+                const cutItem = contextMenu.querySelector('[data-action="cut"]');
+                const copyItem = contextMenu.querySelector('[data-action="copy"]');
+                if (cutItem) cutItem.classList.toggle('disabled', !hasSelection);
+                if (copyItem) copyItem.classList.toggle('disabled', !hasSelection);
+
+                // Check undo / redo states
+                const hist = getHistory(activeTabId);
+                const undoItem = contextMenu.querySelector('[data-action="undo"]');
+                const redoItem = contextMenu.querySelector('[data-action="redo"]');
+                if (undoItem) undoItem.classList.toggle('disabled', hist.undo.length <= 1);
+                if (redoItem) redoItem.classList.toggle('disabled', hist.redo.length === 0);
+
+                // Clear item focus
+                contextMenu.querySelectorAll('.context-menu-item').forEach(el => el.classList.remove('focus'));
+                activeContextIndex = -1;
+
+                // Show context menu to compute bounding box
+                contextMenu.classList.add('active');
+
+                const menuWidth = contextMenu.offsetWidth || 224;
+                const menuHeight = contextMenu.offsetHeight || 420;
+                const pad = 8;
+
+                let posX = x;
+                let posY = y;
+
+                if (posX + menuWidth > window.innerWidth - pad) {
+                    posX = window.innerWidth - menuWidth - pad;
+                }
+                if (posY + menuHeight > window.innerHeight - pad) {
+                    posY = window.innerHeight - menuHeight - pad;
+                }
+                if (posX < pad) posX = pad;
+                if (posY < pad) posY = pad;
+
+                contextMenu.style.left = `${posX}px`;
+                contextMenu.style.top = `${posY}px`;
+                contextMenu.focus();
+            }
+
+            function hideContextMenu() {
+                if (contextMenu.classList.contains('active')) {
+                    contextMenu.classList.remove('active');
+                    contextMenu.querySelectorAll('.context-menu-item').forEach(el => el.classList.remove('focus'));
+                    activeContextIndex = -1;
+                }
+            }
+
+            // Disable browser right-click and display custom context menu
+            window.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e.clientX, e.clientY);
+            });
+
+            // Keyboard context menu invocation (Shift+F10 or Menu Key)
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+                    e.preventDefault();
+                    const rect = textarea.getBoundingClientRect();
+                    showContextMenu(rect.left + 50, rect.top + 50);
+                }
+            });
+
+            // Dismiss context menu on outside click, window blur, scroll, or resize
+            window.addEventListener('click', (e) => {
+                if (!contextMenu.contains(e.target)) hideContextMenu();
+            });
+            window.addEventListener('scroll', hideContextMenu, true);
+            window.addEventListener('resize', hideContextMenu);
+
+            // Context Menu Keyboard Navigation
+            contextMenu.addEventListener('keydown', (e) => {
+                const items = Array.from(contextMenu.querySelectorAll('.context-menu-item:not(.disabled)'));
+                if (items.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeContextIndex = (activeContextIndex + 1) % items.length;
+                    items.forEach((item, idx) => item.classList.toggle('focus', idx === activeContextIndex));
+                    items[activeContextIndex].focus();
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeContextIndex = (activeContextIndex - 1 + items.length) % items.length;
+                    items.forEach((item, idx) => item.classList.toggle('focus', idx === activeContextIndex));
+                    items[activeContextIndex].focus();
+                    return;
+                }
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (activeContextIndex >= 0 && items[activeContextIndex]) {
+                        items[activeContextIndex].click();
+                    }
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideContextMenu();
+                    textarea.focus();
+                    return;
+                }
+            });
+
+            // Context Menu Actions Execution
+            contextMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item || item.classList.contains('disabled')) return;
+
+                const action = item.getAttribute('data-action');
+                hideContextMenu();
+
+                switch (action) {
+                    case 'undo':
+                        undo();
+                        textarea.focus();
+                        break;
+                    case 'redo':
+                        redo();
+                        textarea.focus();
+                        break;
+                    case 'cut': {
+                        const selStart = textarea.selectionStart;
+                        const selEnd = textarea.selectionEnd;
+                        if (selStart !== selEnd) {
+                            const textToCut = textarea.value.substring(selStart, selEnd);
+                            navigator.clipboard.writeText(textToCut).catch(() => {});
+                            textarea.setRangeText('', selStart, selEnd, 'end');
+                            pushHistory(activeTabId, textarea.value, textarea.selectionStart, textarea.selectionEnd);
+                            renderEditor();
+                            showToast('Cut to clipboard');
+                        }
+                        textarea.focus();
+                        break;
+                    }
+                    case 'copy': {
+                        const selStart = textarea.selectionStart;
+                        const selEnd = textarea.selectionEnd;
+                        if (selStart !== selEnd) {
+                            const textToCopy = textarea.value.substring(selStart, selEnd);
+                            navigator.clipboard.writeText(textToCopy).then(() => {
+                                showToast('Copied to clipboard');
+                            }).catch(() => {});
+                        }
+                        textarea.focus();
+                        break;
+                    }
+                    case 'paste': {
+                        navigator.clipboard.readText().then(clipText => {
+                            if (clipText) {
+                                const selStart = textarea.selectionStart;
+                                const selEnd = textarea.selectionEnd;
+                                textarea.setRangeText(clipText, selStart, selEnd, 'end');
+                                pushHistory(activeTabId, textarea.value, textarea.selectionStart, textarea.selectionEnd);
+                                renderEditor();
+                                showToast('Pasted from clipboard');
+                            }
+                            textarea.focus();
+                        }).catch(() => {
+                            showToast('Clipboard access unavailable — use Ctrl+V', 'warning');
+                            textarea.focus();
+                        });
+                        break;
+                    }
+                    case 'select-all':
+                        textarea.select();
+                        textarea.focus();
+                        renderActiveLineBackdrop();
+                        break;
+                    case 'find':
+                        toggleFindPanel(true);
+                        break;
+                    case 'goto':
+                        openGotoModal();
+                        break;
+                    case 'comment':
+                        toggleComment();
+                        textarea.focus();
+                        break;
+                    case 'wrap':
+                        document.getElementById('btnWordWrap').click();
+                        textarea.focus();
+                        break;
+                    case 'new-tab':
+                        createTab();
+                        break;
+                    case 'save':
+                        saveFile();
+                        break;
+                    case 'settings':
+                        settingsModal.classList.add('active');
+                        break;
+                }
+            });
+
             // Global Keyboard Shortcuts
             document.addEventListener('keydown', (e) => {
                 const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -2781,6 +3154,11 @@
                 if (e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); document.getElementById('btnWordWrap').click(); return; }
 
                 if (e.key === 'Escape') {
+                    if (contextMenu.classList.contains('active')) {
+                        hideContextMenu();
+                        textarea.focus();
+                        return;
+                    }
                     if (findPanel.classList.contains('active')) toggleFindPanel(false);
                     if (settingsModal.classList.contains('active')) settingsModal.classList.remove('active');
                     if (gotoModal.classList.contains('active')) gotoModal.classList.remove('active');
