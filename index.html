@@ -3,1021 +3,2865 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A fast, dependency-free code editor built from scratch.">
-    <title>EditPad Pro</title>
+    <meta name="description" content="EditPad Pro — Professional, dependency-free code and text editor with real-time syntax highlighting, multi-tab workspace, and WebAssembly acceleration.">
+    <title>EditPad Pro — Code Editor</title>
 
     <style>
-        /* --- CSS Variables & Theme --- */
+        /* ==========================================================================
+           DESIGN SYSTEM TOKENS — Zero Gradients, Solid Surfaces, WCAG AA Compliant
+           ========================================================================== */
         :root {
-            /* Base Colors (Zinc/Modern Dark) */
-            --bg-body: #09090b; 
-            --bg-editor: #18181b; 
-            --bg-ui: #18181b; 
-            --bg-hover: #27272a; 
-            --border: #27272a; 
-            --border-focus: #3f3f46;
-            
-            /* Text & Accents */
-            --text-main: #e4e4e7; 
-            --text-muted: #a1a1aa; 
-            --text-inverse: #18181b;
-            --accent: #0ea5e9; 
-            --accent-hover: #38bdf8; 
-            --accent-bg: rgba(14, 165, 233, 0.15);
-            --caret: #0ea5e9;
-            --selection: rgba(14, 165, 233, 0.3);
+            /* Surface Hierarchy (Dark Theme — Zinc) */
+            --bg-canvas: #09090b;
+            --bg-surface: #121215;
+            --bg-surface-raised: #18181c;
+            --bg-surface-active: #222227;
+            --bg-surface-hover: #27272f;
 
-            /* Typography */
-            --font-ui: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-code: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            /* Borders */
+            --border-subtle: #27272e;
+            --border-strong: #3f3f48;
+            --border-focus: #3b82f6;
+
+            /* Typography & Foregrounds */
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --text-inverse: #09090b;
+
+            /* Accent & Semantic States */
+            --color-accent: #2563eb;
+            --color-accent-hover: #1d4ed8;
+            --color-accent-subtle: rgba(37, 99, 235, 0.16);
+            --color-danger: #dc2626;
+            --color-danger-hover: #b91c1c;
+            --color-success: #16a34a;
+            --color-warning: #d97706;
+
+            /* Editor Elements */
+            --caret-color: #38bdf8;
+            --selection-bg: rgba(56, 189, 248, 0.28);
+            --line-highlight: rgba(255, 255, 255, 0.035);
+            --gutter-bg: #121215;
+            --gutter-text: #52525b;
+            --gutter-active: #e4e4e7;
+
+            /* Typography Stacks */
+            --font-ui: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --font-code: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, Menlo, Monaco, monospace;
             --font-size: 14px;
-            --line-height: 1.5;
+            --line-height: 1.55;
 
-            /* Effects */
-            --radius: 8px;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            /* Geometry & Layout */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --header-height: 44px;
+            --tabs-height: 38px;
+            --status-height: 30px;
+            --gutter-width: 58px;
+
+            /* Elevation */
+            --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.35);
+            --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.65);
+            --focus-ring: 0 0 0 2px var(--color-accent-subtle), 0 0 0 1px var(--color-accent);
         }
 
-        body.light-mode {
-            --bg-body: #e4e4e7;
-            --bg-editor: #ffffff; 
-            --bg-ui: #f8f8f8;
-            --bg-hover: #e4e4e7;
-            --border: #d4d4d8; 
-            --border-focus: #a1a1aa;
-            
-            --text-main: #18181b; 
-            --text-muted: #52525b; 
+        /* Light Theme Preset */
+        body.theme-light {
+            --bg-canvas: #f4f4f5;
+            --bg-surface: #ffffff;
+            --bg-surface-raised: #f1f1f4;
+            --bg-surface-active: #e4e4e8;
+            --bg-surface-hover: #e8e8ed;
+
+            --border-subtle: #e4e4e7;
+            --border-strong: #d4d4d8;
+            --border-focus: #2563eb;
+
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #71717a;
             --text-inverse: #ffffff;
-            --accent: #0284c7; 
-            --accent-hover: #0369a1;
-            --accent-bg: rgba(2, 132, 199, 0.15);
-            
-            --caret: #0284c7;
-            --selection: rgba(2, 132, 199, 0.2);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+            --color-accent: #2563eb;
+            --color-accent-hover: #1d4ed8;
+            --color-accent-subtle: rgba(37, 99, 235, 0.12);
+
+            --caret-color: #2563eb;
+            --selection-bg: rgba(37, 99, 235, 0.18);
+            --line-highlight: rgba(0, 0, 0, 0.035);
+            --gutter-bg: #f8f8fa;
+            --gutter-text: #a1a1aa;
+            --gutter-active: #18181b;
+
+            --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.08);
+            --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.18);
         }
 
-        /* --- Global Reset --- */
-        * { box-sizing: border-box; }
-        
-        body {
+        /* High Contrast Dark Preset */
+        body.theme-high-contrast {
+            --bg-canvas: #000000;
+            --bg-surface: #0a0a0a;
+            --bg-surface-raised: #141414;
+            --bg-surface-active: #222222;
+            --bg-surface-hover: #262626;
+
+            --border-subtle: #444444;
+            --border-strong: #888888;
+            --border-focus: #00d0ff;
+
+            --text-primary: #ffffff;
+            --text-secondary: #d4d4d4;
+            --text-muted: #aaaaaa;
+
+            --color-accent: #00d0ff;
+            --color-accent-hover: #33d9ff;
+            --color-accent-subtle: rgba(0, 208, 255, 0.25);
+
+            --caret-color: #00d0ff;
+            --selection-bg: rgba(0, 208, 255, 0.4);
+            --line-highlight: rgba(255, 255, 255, 0.08);
+            --gutter-bg: #0a0a0a;
+            --gutter-text: #888888;
+            --gutter-active: #ffffff;
+        }
+
+        /* Monokai Theme Preset */
+        body.theme-monokai {
+            --bg-canvas: #1e1f1c;
+            --bg-surface: #272822;
+            --bg-surface-raised: #34352f;
+            --bg-surface-active: #3e3d32;
+            --bg-surface-hover: #48473c;
+
+            --border-subtle: #3e3d32;
+            --border-strong: #59584d;
+            --border-focus: #a6e22e;
+
+            --text-primary: #f8f8f2;
+            --text-secondary: #cfcfc2;
+            --text-muted: #75715e;
+
+            --color-accent: #a6e22e;
+            --color-accent-hover: #89c522;
+            --color-accent-subtle: rgba(166, 226, 46, 0.18);
+
+            --caret-color: #f8f8f0;
+            --selection-bg: rgba(73, 72, 62, 0.85);
+            --line-highlight: rgba(255, 255, 255, 0.04);
+            --gutter-bg: #272822;
+            --gutter-text: #75715e;
+            --gutter-active: #f8f8f2;
+        }
+
+        /* ==========================================================================
+           RESET & FOUNDATIONS
+           ========================================================================== */
+        *, *::before, *::after {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            font-family: var(--font-ui);
-            overflow: hidden;
-            transition: background-color 0.2s, color 0.2s;
         }
 
-        .app-container {
+        html, body {
             width: 100%;
             height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        button, input, select {
+            font: inherit;
+            color: inherit;
+        }
+
+        :focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+
+        /* Responsive Application Shell */
+        .app-shell {
             display: flex;
             flex-direction: column;
-            background: var(--bg-editor);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-surface);
             position: relative;
         }
 
-        /* --- Scrollbars --- */
-        ::-webkit-scrollbar { width: 12px; height: 12px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-corner { background: transparent; }
-        ::-webkit-scrollbar-thumb {
-            background-color: rgba(150, 150, 150, 0.2);
-            border-radius: 6px;
-            border: 3px solid var(--bg-editor);
-        }
-        ::-webkit-scrollbar-thumb:hover { background-color: rgba(150, 150, 150, 0.4); }
-
-        /* --- Header / Toolbar --- */
-        .header {
+        /* ==========================================================================
+           HEADER & PRIMARY TOOLBAR
+           ========================================================================== */
+        .app-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            height: 48px;
-            padding: 0 16px;
-            background: var(--bg-ui);
-            border-bottom: 1px solid var(--border);
+            justify-content: space-between;
+            height: var(--header-height);
+            padding: 0 12px;
+            background-color: var(--bg-surface-raised);
+            border-bottom: 1px solid var(--border-subtle);
+            user-select: none;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        .header-section {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-section.center {
+            flex: 1;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+        }
+
+        .brand svg {
+            color: var(--color-accent);
+            flex-shrink: 0;
+        }
+
+        .badge-arch {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 5px;
+            background-color: var(--color-accent-subtle);
+            color: var(--color-accent);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-accent);
+            line-height: 1;
+        }
+
+        .header-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 30px;
+            min-width: 30px;
+            padding: 0 8px;
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .header-btn:hover {
+            background-color: var(--bg-surface-hover);
+            color: var(--text-primary);
+            border-color: var(--border-subtle);
+        }
+
+        .header-btn.active {
+            background-color: var(--bg-surface-active);
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .header-btn svg {
+            width: 15px;
+            height: 15px;
+            stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .btn-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .divider-vertical {
+            width: 1px;
+            height: 18px;
+            background-color: var(--border-subtle);
+            margin: 0 3px;
+            flex-shrink: 0;
+        }
+
+        .select-lang {
+            height: 30px;
+            padding: 0 8px;
+            background-color: var(--bg-surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .select-lang:hover {
+            color: var(--text-primary);
+            border-color: var(--border-strong);
+        }
+
+        .select-lang:focus {
+            border-color: var(--border-focus);
+            color: var(--text-primary);
+        }
+
+        /* ==========================================================================
+           MULTI-DOCUMENT TAB BAR
+           ========================================================================== */
+        .tab-bar {
+            display: flex;
+            align-items: center;
+            height: var(--tabs-height);
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
             user-select: none;
             z-index: 10;
         }
 
-        .header-left, .header-right { display: flex; align-items: center; gap: 6px; flex: 1; }
-        .header-right { justify-content: flex-end; }
-        .header-center { display: flex; justify-content: center; flex: 1; }
-
-        .brand {
-            display: flex; align-items: center; gap: 8px; margin-right: 12px;
-            font-weight: 600; font-size: 13px; color: var(--text-main); letter-spacing: -0.3px;
+        .tab-bar::-webkit-scrollbar {
+            display: none;
         }
 
-        /* Inputs & Buttons */
-        .filename-input {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-main);
-            font-family: var(--font-ui);
-            font-size: 13px;
-            font-weight: 500;
-            text-align: center;
-            width: 220px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            outline: none;
-            transition: var(--transition);
-        }
-        .filename-input:hover { background: var(--bg-hover); }
-        .filename-input:focus {
-            background: var(--bg-editor);
-            border-color: var(--border-focus);
-            box-shadow: 0 0 0 2px var(--accent-bg);
+        .tab-list {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 100%;
         }
 
-        .icon-btn {
-            display: flex; align-items: center; justify-content: center;
-            width: 32px; height: 32px; border: none; background: transparent;
-            color: var(--text-muted); border-radius: 6px; cursor: pointer;
-            transition: var(--transition);
-        }
-        .icon-btn:hover { background: var(--bg-hover); color: var(--text-main); }
-        
-        .text-btn {
-            padding: 6px 12px; font-size: 13px; font-weight: 500; border-radius: 6px;
-            background: transparent; color: var(--text-main); border: 1px solid var(--border);
-            cursor: pointer; transition: var(--transition);
-        }
-        .text-btn:hover { background: var(--bg-hover); }
-
-        .lang-select {
-            background: transparent; border: 1px solid transparent; color: var(--text-muted);
-            font-size: 13px; font-weight: 500; padding: 4px 8px; border-radius: 6px;
-            outline: none; cursor: pointer; transition: var(--transition);
-        }
-        .lang-select:hover { background: var(--bg-hover); color: var(--text-main); }
-        .lang-select:focus { border-color: var(--border-focus); background: var(--bg-editor); }
-
-        /* --- Workspace & Editor --- */
-        .workspace {
-            position: relative;
-            flex: 1; display: flex; flex-direction: column;
-            overflow: hidden; background: var(--bg-editor);
-        }
-
-        .editor-container { position: relative; flex: 1; overflow: hidden; }
-
-        .editor-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            margin: 0; padding: 24px 24px 50px 24px; border: none;
-            font-family: var(--font-code); font-size: var(--font-size); line-height: var(--line-height);
-            tab-size: 4; white-space: pre; overflow-wrap: normal; overflow: auto; outline: none;
-            background: transparent; -webkit-font-smoothing: antialiased;
-            font-variant-ligatures: none; 
-        }
-
-        #highlighting { z-index: 1; color: var(--text-main); pointer-events: none; }
-        
-        #highlighting::-webkit-scrollbar-thumb { background: transparent; border: none; }
-        #highlighting::-webkit-scrollbar-track { background: transparent; }
-        #highlighting::-webkit-scrollbar-corner { background: transparent; }
-        #highlighting { scrollbar-color: transparent transparent; }
-        
-        #editing { 
-            z-index: 2; 
-            color: transparent; 
-            caret-color: var(--caret); 
-            resize: none; 
-            cursor: auto; 
-        }
-        #editing::selection { background: var(--selection); color: transparent; }
-
-        /* --- Find Bar --- */
-        .find-bar-container {
-            position: absolute; top: 12px; right: 24px; z-index: 20;
-            transform: translateY(-15px); opacity: 0; pointer-events: none;
-            transition: var(--transition);
-        }
-        .find-bar-container.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        
-        .find-bar {
-            display: flex; align-items: center; gap: 8px; padding: 8px;
-            background: var(--bg-ui); border: 1px solid var(--border);
-            border-radius: 8px; box-shadow: var(--shadow-lg);
-        }
-        
-        .find-input-group { position: relative; display: flex; align-items: center; }
-        .find-input-group .input-icon { position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
-        
-        .find-input {
-            background: var(--bg-hover); border: 1px solid transparent; color: var(--text-main);
-            padding: 6px 10px 6px 32px; border-radius: 6px; font-size: 13px; width: 150px; outline: none; transition: var(--transition);
-        }
-        .find-input:focus { background: var(--bg-editor); border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--accent-bg); }
-        .divider { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
-
-        /* --- Status Bar --- */
-        .status-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            height: 32px; padding: 0 16px; background: var(--bg-ui);
-            border-top: 1px solid var(--border); font-size: 12px; font-weight: 500;
-            color: var(--text-muted); user-select: none; letter-spacing: 0.2px; z-index: 10;
-        }
-        .status-bar > div { display: flex; gap: 20px; }
-
-        /* --- Settings Modal --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 100;
-            display: none; align-items: center; justify-content: center;
-        }
-        .modal-overlay.active { display: flex; }
-        
-        .modal {
-            background: var(--bg-ui); border: 1px solid var(--border); border-radius: 12px;
-            padding: 24px; width: 380px; box-shadow: var(--shadow-lg);
-            max-height: 90vh; overflow-y: auto;
-            transform: scale(0.95); opacity: 0; transition: var(--transition);
-        }
-        .modal-overlay.active .modal { transform: scale(1); opacity: 1; }
-
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); }
-        
-        .settings-group { display: flex; flex-direction: column; gap: 16px; }
-        .modal-row { display: flex; justify-content: space-between; align-items: center; }
-        .modal-row label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
-
-        .styled-select, .styled-input {
-            background: var(--bg-hover); border: 1px solid transparent; color: var(--text-main);
-            padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none; transition: var(--transition); width: 160px;
-        }
-        .styled-select:focus, .styled-input:focus { background: var(--bg-editor); border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--accent-bg); }
-
-        .color-picker-wrap { display: flex; align-items: center; }
-        .styled-color {
-            appearance: none; -webkit-appearance: none; width: 28px; height: 28px;
-            border: none; padding: 0; border-radius: 6px; cursor: pointer; background: transparent;
-        }
-        .styled-color::-webkit-color-swatch-wrapper { padding: 0; }
-        .styled-color::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 6px; }
-
-        /* Custom Toggle Switch */
-        .toggle-switch {
-            position: relative; display: inline-block; width: 36px; height: 20px;
-        }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--bg-hover); transition: .2s; border-radius: 20px;
-            border: 1px solid var(--border);
-        }
-        .toggle-slider:before {
-            position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px;
-            background-color: var(--text-muted); transition: .2s; border-radius: 50%;
-        }
-        .toggle-switch input:checked + .toggle-slider { background-color: var(--accent); border-color: var(--accent); }
-        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #fff; }
-
-        .settings-divider { height: 1px; background: var(--border); margin: 4px 0; }
-
-        /* --- Custom Tooltip --- */
-        .custom-tooltip {
-            position: fixed;
-            background: var(--text-main);
-            color: var(--text-inverse);
-            padding: 5px 10px;
+        .tab-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 30px;
+            padding: 0 10px 0 8px;
+            background-color: var(--bg-surface-raised);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
             font-size: 12px;
             font-weight: 500;
-            border-radius: 6px;
-            pointer-events: none;
-            opacity: 0;
-            transform: scale(0.95) translateY(4px);
-            transition: opacity 0.15s ease, transform 0.15s ease;
-            z-index: 9999;
-            box-shadow: var(--shadow-md);
+            max-width: 200px;
+            min-width: 90px;
+            position: relative;
+            transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .tab-item:hover {
+            background-color: var(--bg-surface-hover);
+            color: var(--text-primary);
+        }
+
+        .tab-item.active {
+            background-color: var(--bg-surface-active);
+            color: var(--text-primary);
+            border-color: var(--border-strong);
+            border-bottom-color: var(--color-accent);
+        }
+
+        .tab-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            color: var(--text-muted);
+        }
+
+        .tab-item.active .tab-icon {
+            color: var(--color-accent);
+        }
+
+        .tab-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .custom-tooltip.show {
-            opacity: 1;
-            transform: scale(1) translateY(0);
+
+        .tab-dirty-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--color-accent);
+            display: none;
+            flex-shrink: 0;
         }
 
-        /* --- Syntax Colors (Premium Theme) --- */
-        .token.comment { color: #71717a; font-style: italic; }
-        .token.string { color: #a5d6ff; }
-        .token.number { color: #d19a66; }
-        .token.keyword { color: #ff7b72; font-weight: 500; }
-        .token.function { color: #d2a8ff; }
-        .token.operator { color: #8b949e; }
-        .token.class-name { color: #7ee787; }
-        .token.boolean { color: #79c0ff; }
-        .token.punctuation { color: #8b949e; }
-        .token.property, .token.attr-name { color: #79c0ff; }
-        .token.tag { color: #7ee787; }
-        .token.attr-value { color: #a5d6ff; }
-        .token.selector { color: #d2a8ff; }
-        .token.variable { color: #79c0ff; }
+        .tab-item.dirty .tab-dirty-dot {
+            display: block;
+        }
+
+        .tab-close-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            margin-left: 2px;
+            transition: background-color 0.15s, color 0.15s;
+        }
+
+        .tab-close-btn:hover {
+            background-color: var(--bg-surface-hover);
+            color: var(--color-danger);
+        }
+
+        .btn-new-tab {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            margin-left: 4px;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .btn-new-tab:hover {
+            background-color: var(--bg-surface-hover);
+            color: var(--text-primary);
+            border-color: var(--border-subtle);
+        }
+
+        /* ==========================================================================
+           MAIN WORKSPACE & CODE VIEWPORT
+           ========================================================================== */
+        .workspace {
+            display: flex;
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--bg-surface);
+        }
+
+        /* Line Numbers Gutter */
+        .editor-gutter {
+            width: var(--gutter-width);
+            height: 100%;
+            background-color: var(--gutter-bg);
+            border-right: 1px solid var(--border-subtle);
+            overflow: hidden;
+            user-select: none;
+            flex-shrink: 0;
+            padding: 16px 0 60px 0;
+            font-family: var(--font-code);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            color: var(--gutter-text);
+            text-align: right;
+            box-sizing: border-box;
+            z-index: 5;
+        }
+
+        .line-number {
+            padding-right: 12px;
+            padding-left: 4px;
+            cursor: pointer;
+            white-space: pre;
+            height: calc(var(--font-size) * var(--line-height));
+            box-sizing: border-box;
+            display: block;
+        }
+
+        .line-number:hover {
+            color: var(--text-secondary);
+        }
+
+        .line-number.active {
+            color: var(--gutter-active);
+            font-weight: 600;
+        }
+
+        /* Editor Core Layers */
+        .editor-container {
+            position: relative;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Active Line Highlight Backdrop */
+        .active-line-backdrop {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: calc(var(--font-size) * var(--line-height));
+            background-color: var(--line-highlight);
+            pointer-events: none;
+            z-index: 1;
+            display: none;
+            top: 16px;
+        }
+
+        .editor-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 16px 20px 60px 20px;
+            border: none;
+            font-family: var(--font-code);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            tab-size: 4;
+            -moz-tab-size: 4;
+            white-space: pre;
+            word-wrap: normal;
+            overflow-wrap: normal;
+            overflow: auto;
+            outline: none;
+            box-sizing: border-box;
+            font-variant-ligatures: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Syntax Highlight Layer */
+        #highlighting {
+            z-index: 2;
+            color: var(--text-primary);
+            pointer-events: none;
+            background: transparent;
+            scrollbar-color: transparent transparent;
+        }
+
+        #highlighting::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Textarea Editing Layer */
+        #editing {
+            z-index: 3;
+            color: transparent;
+            caret-color: var(--caret-color);
+            background: transparent;
+            resize: none;
+        }
+
+        #editing::selection {
+            background-color: var(--selection-bg);
+            color: transparent;
+        }
+
+        /* Soft Wrap Toggle Support */
+        .editor-container.word-wrap .editor-layer {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--border-strong);
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--bg-surface);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-muted);
+        }
+
+        /* ==========================================================================
+           FIND & REPLACE TOOLBAR
+           ========================================================================== */
+        .find-panel {
+            position: absolute;
+            top: 8px;
+            right: 20px;
+            z-index: 30;
+            background-color: var(--bg-surface-raised);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-modal);
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            width: 360px;
+            user-select: none;
+        }
+
+        .find-panel.active {
+            display: flex;
+        }
+
+        .find-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .find-input-wrap {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .find-input-wrap svg {
+            position: absolute;
+            left: 8px;
+            width: 14px;
+            height: 14px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .find-input {
+            width: 100%;
+            height: 28px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0 8px 0 28px;
+            color: var(--text-primary);
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .find-input:focus {
+            border-color: var(--border-focus);
+        }
+
+        .match-badge {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 0 4px;
+            white-space: nowrap;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .find-toggle-btn {
+            height: 28px;
+            min-width: 28px;
+            padding: 0 4px;
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .find-toggle-btn:hover {
+            background-color: var(--bg-surface-hover);
+            color: var(--text-primary);
+        }
+
+        .find-toggle-btn.active {
+            background-color: var(--color-accent-subtle);
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .find-action-btn {
+            height: 28px;
+            padding: 0 10px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+
+        .find-action-btn:hover {
+            background-color: var(--bg-surface-hover);
+            border-color: var(--border-strong);
+        }
+
+        /* ==========================================================================
+           STATUS BAR & WORKSPACE TELEMETRY
+           ========================================================================== */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: var(--status-height);
+            padding: 0 12px;
+            background-color: var(--bg-surface-raised);
+            border-top: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 500;
+            user-select: none;
+            z-index: 20;
+            gap: 16px;
+        }
+
+        .status-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .status-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: default;
+        }
+
+        .status-item.interactive {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            transition: background-color 0.15s, color 0.15s;
+        }
+
+        .status-item.interactive:hover {
+            background-color: var(--bg-surface-hover);
+            color: var(--text-primary);
+        }
+
+        .wasm-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            padding: 2px 6px;
+            background-color: var(--color-accent-subtle);
+            color: var(--color-accent);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-accent);
+        }
+
+        .wasm-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--color-success);
+        }
+
+        /* ==========================================================================
+           ACCESSIBLE MODAL DIALOGS
+           ========================================================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background-color: var(--bg-surface-raised);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 440px;
+            box-shadow: var(--shadow-modal);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            outline: none;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .modal-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .modal-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+            background-color: var(--bg-surface);
+        }
+
+        .modal-input {
+            height: 32px;
+            padding: 0 10px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            width: 160px;
+            transition: border-color 0.15s;
+        }
+
+        .modal-input:focus {
+            border-color: var(--border-focus);
+        }
+
+        /* Toggle Switch Component */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: 20px;
+            transition: 0.15s;
+        }
+
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            transition: 0.15s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(16px);
+            background-color: #ffffff;
+        }
+
+        .toggle-switch input:focus-visible + .toggle-slider {
+            box-shadow: var(--focus-ring);
+        }
+
+        /* Primary and Secondary Action Buttons */
+        .btn-primary {
+            height: 32px;
+            padding: 0 14px;
+            background-color: var(--color-accent);
+            color: #ffffff;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-accent-hover);
+        }
+
+        .btn-secondary {
+            height: 32px;
+            padding: 0 14px;
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-surface-hover);
+            border-color: var(--border-strong);
+        }
+
+        /* ==========================================================================
+           DRAG & DROP VISUAL OVERLAY
+           ========================================================================== */
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(9, 9, 11, 0.88);
+            border: 2px dashed var(--color-accent);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 80;
+            pointer-events: none;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .drag-overlay.active {
+            display: flex;
+        }
+
+        /* ==========================================================================
+           ACCESSIBLE TOAST NOTIFICATIONS
+           ========================================================================== */
+        .toast-container {
+            position: fixed;
+            bottom: 40px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 120;
+            pointer-events: none;
+        }
+
+        .toast-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background-color: var(--bg-surface-raised);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-modal);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+            pointer-events: auto;
+            animation: toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .toast-item svg {
+            width: 16px;
+            height: 16px;
+            color: var(--color-accent);
+            flex-shrink: 0;
+        }
+
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tooltip Component */
+        .app-tooltip {
+            position: fixed;
+            background-color: var(--text-primary);
+            color: var(--text-inverse);
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 9999;
+            box-shadow: var(--shadow-subtle);
+            white-space: nowrap;
+        }
+
+        .app-tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ==========================================================================
+           SYNTAX HIGHLIGHTING TOKEN COLOR PALETTE (Solid Colors)
+           ========================================================================== */
+        .token-comment    { color: #71717a; font-style: italic; }
+        .token-string     { color: #a5d6ff; }
+        .token-keyword    { color: #ff7b72; font-weight: 500; }
+        .token-number     { color: #d19a66; }
+        .token-function   { color: #d2a8ff; }
+        .token-operator   { color: #79c0ff; }
+        .token-register   { color: #ffa657; font-weight: 500; }
+        .token-directive  { color: #7ee787; font-weight: 500; }
+        .token-type       { color: #7ee787; }
+        .token-tag        { color: #7ee787; }
+        .token-attribute  { color: #79c0ff; }
+        .token-boolean    { color: #79c0ff; }
+        .token-variable   { color: #ffa657; }
+        .token-punctuation{ color: #8b949e; }
 
         /* Light Mode Syntax Overrides */
-        body.light-mode .token.comment { color: #6e7781; }
-        body.light-mode .token.string { color: #0a3069; }
-        body.light-mode .token.number { color: #0550ae; }
-        body.light-mode .token.keyword { color: #cf222e; }
-        body.light-mode .token.function { color: #8250df; }
-        body.light-mode .token.operator { color: #24292f; }
-        body.light-mode .token.class-name { color: #116329; }
-        body.light-mode .token.boolean { color: #0550ae; }
-        body.light-mode .token.punctuation { color: #57606a; }
-        body.light-mode .token.property, body.light-mode .token.attr-name { color: #0550ae; }
-        body.light-mode .token.tag { color: #116329; }
-        body.light-mode .token.attr-value { color: #0a3069; }
-        body.light-mode .token.selector { color: #8250df; }
-        body.light-mode .token.variable { color: #0550ae; }
+        body.theme-light .token-comment    { color: #6e7781; }
+        body.theme-light .token-string     { color: #0a3069; }
+        body.theme-light .token-keyword    { color: #cf222e; }
+        body.theme-light .token-number     { color: #0550ae; }
+        body.theme-light .token-function   { color: #8250df; }
+        body.theme-light .token-operator   { color: #0969da; }
+        body.theme-light .token-register   { color: #953800; }
+        body.theme-light .token-directive  { color: #116329; }
+        body.theme-light .token-type       { color: #116329; }
+        body.theme-light .token-tag        { color: #116329; }
+        body.theme-light .token-attribute  { color: #0550ae; }
+        body.theme-light .token-boolean    { color: #0550ae; }
+        body.theme-light .token-variable   { color: #953800; }
+        body.theme-light .token-punctuation{ color: #57606a; }
+
+        /* Monokai Syntax Overrides */
+        body.theme-monokai .token-comment    { color: #75715e; }
+        body.theme-monokai .token-string     { color: #e6db74; }
+        body.theme-monokai .token-keyword    { color: #f92672; }
+        body.theme-monokai .token-number     { color: #ae81ff; }
+        body.theme-monokai .token-function   { color: #a6e22e; }
+        body.theme-monokai .token-operator   { color: #f92672; }
+        body.theme-monokai .token-register   { color: #fd971f; }
+        body.theme-monokai .token-directive  { color: #66d9ef; }
+        body.theme-monokai .token-type       { color: #66d9ef; }
+        body.theme-monokai .token-tag        { color: #f92672; }
+        body.theme-monokai .token-attribute  { color: #a6e22e; }
+        body.theme-monokai .token-boolean    { color: #ae81ff; }
+        body.theme-monokai .token-variable   { color: #fd971f; }
+        body.theme-monokai .token-punctuation{ color: #f8f8f2; }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            .btn-label { display: none; }
+            .badge-arch { display: none; }
+            .status-group:nth-child(2) { display: none; }
+            .find-panel { width: calc(100vw - 32px); right: 16px; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- Header / Toolbar -->
-        <header class="header">
-            <div class="header-left">
+    <div class="app-shell" id="appShell">
+        <!-- Header / Main Toolbar -->
+        <header class="app-header">
+            <div class="header-section">
                 <div class="brand">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                     <span>EditPad Pro</span>
                 </div>
-                <button id="btnOpen" class="icon-btn" data-tooltip="Open File (Ctrl+O)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>
+                <span class="badge-arch" title="Accelerated with WebAssembly and x64 Native Support">x64 / WASM</span>
+
+                <div class="divider-vertical"></div>
+
+                <button type="button" id="btnNew" class="header-btn" data-tooltip="New File (Ctrl+N)" aria-label="New File">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span class="btn-label">New</span>
                 </button>
-                <input type="file" id="fileInput" style="display:none">
-                
-                <button id="btnSave" class="icon-btn" data-tooltip="Save File (Ctrl+S)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+
+                <button type="button" id="btnOpen" class="header-btn" data-tooltip="Open File (Ctrl+O)" aria-label="Open File">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>
+                    <span class="btn-label">Open</span>
+                </button>
+                <input type="file" id="filePicker" multiple style="display: none;" aria-hidden="true">
+
+                <button type="button" id="btnSave" class="header-btn" data-tooltip="Save File (Ctrl+S)" aria-label="Save File">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span class="btn-label">Save</span>
                 </button>
             </div>
 
-            <div class="header-center">
-                <input type="text" id="filenameInput" class="filename-input" placeholder="untitled.txt" spellcheck="false" data-tooltip="Rename File">
-            </div>
+            <div class="header-section center"></div>
 
-            <div class="header-right">
-                <select id="langSelect" class="lang-select" data-tooltip="Language Mode">
-                    <option value="plaintext">Plain Text</option>
+            <div class="header-section">
+                <select id="langSelect" class="select-lang" aria-label="Language Mode" data-tooltip="Select Language Syntax">
+                    <option value="assembly">Assembly (x86_64 / MASM)</option>
                     <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="python">Python</option>
                     <option value="html">HTML</option>
                     <option value="css">CSS</option>
-                    <option value="python">Python</option>
+                    <option value="cpp">C / C++</option>
+                    <option value="csharp">C#</option>
+                    <option value="rust">Rust</option>
+                    <option value="go">Go</option>
+                    <option value="java">Java</option>
+                    <option value="bash">Bash / Shell</option>
+                    <option value="sql">SQL</option>
                     <option value="json">JSON</option>
+                    <option value="yaml">YAML</option>
                     <option value="markdown">Markdown</option>
                     <option value="lua">Lua</option>
-                    <option value="cpp">C++</option>
-                    <option value="bash">Bash</option>
-                    <option value="sql">SQL</option>
+                    <option value="plaintext">Plain Text</option>
                 </select>
-                <button id="btnFind" class="icon-btn" data-tooltip="Find & Replace (Ctrl+F)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+
+                <div class="divider-vertical"></div>
+
+                <button type="button" id="btnFind" class="header-btn" data-tooltip="Find and Replace (Ctrl+F)" aria-label="Find and Replace">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </button>
-                <button id="btnSettings" class="icon-btn" data-tooltip="Settings">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+
+                <button type="button" id="btnWordWrap" class="header-btn" data-tooltip="Toggle Word Wrap (Alt+Z)" aria-label="Toggle Word Wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><polyline points="16 10 19 12 16 14"/><path d="M19 12a4 4 0 0 1-4 4H3"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+
+                <button type="button" id="btnSettings" class="header-btn" data-tooltip="Editor Settings" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
             </div>
         </header>
 
-        <!-- Main Workspace -->
-        <main class="workspace">
-            <!-- Floating Find Bar -->
-            <div class="find-bar-container" id="findBar">
-                <div class="find-bar">
-                    <div class="find-input-group">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" id="findInput" placeholder="Find..." class="find-input">
-                    </div>
-                    <div class="find-input-group">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-                        <input type="text" id="replaceInput" placeholder="Replace" class="find-input">
-                    </div>
-                    <button id="btnFindNext" class="icon-btn" data-tooltip="Next Occurrence">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
-                    </button>
-                    <div class="divider"></div>
-                    <button id="btnReplace" class="text-btn">Replace</button>
-                    <button id="btnReplaceAll" class="text-btn">All</button>
-                    <div class="divider"></div>
-                    <button id="btnCloseFind" class="icon-btn" data-tooltip="Close (Esc)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                </div>
+        <!-- Multi-Document Tab Bar -->
+        <nav class="tab-bar" aria-label="Open Documents">
+            <div class="tab-list" id="tabList" role="tablist">
+                <!-- Dynamically populated tab items -->
+            </div>
+            <button type="button" id="btnNewTab" class="btn-new-tab" data-tooltip="New Tab (Ctrl+N)" aria-label="Open New Tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </nav>
+
+        <!-- Main Workspace Viewport -->
+        <main class="workspace" id="workspaceContainer">
+            <!-- Line Numbers Gutter -->
+            <div class="editor-gutter" id="editorGutter" aria-hidden="true">
+                <span class="line-number active">1</span>
             </div>
 
-            <!-- Editor Container -->
+            <!-- Editor Core Layers -->
             <div class="editor-container" id="editorContainer">
+                <div class="active-line-backdrop" id="activeLineBackdrop"></div>
                 <pre id="highlighting" class="editor-layer" aria-hidden="true"></pre>
-                <textarea id="editing" class="editor-layer" spellcheck="false" autocorrect="off" autocapitalize="off" wrap="off"></textarea>
+                <textarea id="editing" class="editor-layer" spellcheck="false" autocorrect="off" autocapitalize="off" wrap="off" aria-label="Code Editor"></textarea>
+            </div>
+
+            <!-- Floating Find & Replace Panel -->
+            <section class="find-panel" id="findPanel" role="search" aria-label="Find and Replace Bar">
+                <div class="find-row">
+                    <div class="find-input-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="findInput" class="find-input" placeholder="Find..." aria-label="Find text">
+                    </div>
+                    <span class="match-badge" id="matchBadge">0 of 0</span>
+                    <button type="button" id="btnFindPrev" class="find-toggle-btn" data-tooltip="Previous Match (Shift+Enter)" aria-label="Previous Match">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                    <button type="button" id="btnFindNext" class="find-toggle-btn" data-tooltip="Next Match (Enter)" aria-label="Next Match">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <button type="button" id="btnToggleCase" class="find-toggle-btn" data-tooltip="Match Case (Alt+C)" aria-label="Match Case">Aa</button>
+                    <button type="button" id="btnToggleWord" class="find-toggle-btn" data-tooltip="Match Whole Word (Alt+W)" aria-label="Match Whole Word">W</button>
+                    <button type="button" id="btnToggleRegex" class="find-toggle-btn" data-tooltip="Use Regular Expression (Alt+R)" aria-label="Use Regular Expression">.*</button>
+                    <button type="button" id="btnCloseFind" class="find-toggle-btn" data-tooltip="Close (Esc)" aria-label="Close Find Bar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="find-row">
+                    <div class="find-input-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                        <input type="text" id="replaceInput" class="find-input" placeholder="Replace with..." aria-label="Replace text">
+                    </div>
+                    <button type="button" id="btnReplace" class="find-action-btn" aria-label="Replace current match">Replace</button>
+                    <button type="button" id="btnReplaceAll" class="find-action-btn" aria-label="Replace all occurrences">All</button>
+                </div>
+            </section>
+
+            <!-- Drag and Drop Visual Feedback Overlay -->
+            <div class="drag-overlay" id="dragOverlay" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Drop files anywhere to open</span>
             </div>
         </main>
 
-        <!-- Status Bar -->
-        <footer class="status-bar">
-            <div class="status-left">
-                <span id="stats">Ln 1, Col 1</span>
+        <!-- Status Bar & Metrics -->
+        <footer class="status-bar" role="status" aria-label="Document Status">
+            <div class="status-group">
+                <span class="status-item" id="statusPos">Ln 1, Col 1</span>
+                <span class="status-item" id="statusSelection" style="display: none;"></span>
             </div>
-            <div class="status-right">
-                <span id="charCount">0 chars</span>
-                <span id="fileInfo">UTF-8</span>
+
+            <div class="status-group">
+                <span class="status-item interactive" id="statusEol" data-tooltip="Click to toggle CRLF / LF">LF</span>
+                <span class="status-item interactive" id="statusEncoding" data-tooltip="Document Encoding">UTF-8</span>
+                <span class="status-item interactive" id="statusSpaces" data-tooltip="Tab Indentation">Spaces: 4</span>
+            </div>
+
+            <div class="status-group">
+                <span class="status-item" id="statusMetrics">1 line • 0 words • 0 chars</span>
+                <span class="wasm-badge" id="statusWasmBadge" title="Calculated using local WebAssembly module">
+                    <span class="wasm-indicator"></span>
+                    <span>WASM STATS</span>
+                </span>
             </div>
         </footer>
 
-        <!-- Settings Modal -->
-        <div class="modal-overlay" id="settingsModal">
-            <div class="modal">
+        <!-- Settings Modal Dialog -->
+        <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+            <div class="modal-card">
                 <div class="modal-header">
-                    <h3>Editor Settings</h3>
-                    <button id="btnCloseSettings" class="icon-btn" data-tooltip="Close">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <h2 class="modal-title" id="settingsModalTitle">Editor Preferences</h2>
+                    <button type="button" id="btnCloseSettings" class="header-btn" aria-label="Close Settings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
-                
-                <div class="settings-group">
+                <div class="modal-body">
                     <div class="modal-row">
-                        <label>Save Workspace Locally</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="saveLocalToggle">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="modal-row">
-                        <label>Spell Check</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="spellCheckToggle">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="modal-row">
-                        <label>Auto-Correct</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="autoCorrectToggle">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="settings-divider"></div>
-
-                    <div class="modal-row">
-                        <label>Theme Preset</label>
-                        <select id="themeSelect" class="styled-select">
-                            <option value="dark">Dark Theme</option>
-                            <option value="light">Light Theme</option>
+                        <label class="modal-label" for="settingTheme">Color Theme</label>
+                        <select id="settingTheme" class="select-lang" style="width: 170px;">
+                            <option value="dark">Modern Zinc (Dark)</option>
+                            <option value="light">Clean Slate (Light)</option>
+                            <option value="high-contrast">High Contrast (Dark)</option>
+                            <option value="monokai">Monokai Dark</option>
                         </select>
                     </div>
 
                     <div class="modal-row">
-                        <label>Editor Background</label>
-                        <div class="color-picker-wrap">
-                            <input type="color" id="bgColorInput" value="#18181b" class="styled-color">
-                        </div>
-                    </div>
-
-                    <div class="modal-row">
-                        <label>Text Color</label>
-                        <div class="color-picker-wrap">
-                            <input type="color" id="textColorInput" value="#e4e4e7" class="styled-color">
-                        </div>
-                    </div>
-
-                    <div class="modal-row">
-                        <label>Font Family</label>
-                        <select id="fontSelect" class="styled-select">
-                            <option value='"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace'>System Monospace</option>
+                        <label class="modal-label" for="settingFontFamily">Font Family</label>
+                        <select id="settingFontFamily" class="select-lang" style="width: 170px;">
+                            <option value='"JetBrains Mono", "Cascadia Code", Consolas, monospace'>JetBrains / Cascadia</option>
                             <option value='"Fira Code", monospace'>Fira Code</option>
-                            <option value='"Consolas", "Monaco", monospace'>Consolas / Monaco</option>
-                            <option value='"Courier New", monospace'>Courier New</option>
+                            <option value='Consolas, "Lucida Console", monospace'>Consolas</option>
+                            <option value='"Courier New", Courier, monospace'>Courier New</option>
+                            <option value='ui-monospace, SFMono-Regular, monospace'>System Monospace</option>
                         </select>
                     </div>
 
                     <div class="modal-row">
-                        <label>Font Size</label>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="number" id="fontSizeInput" value="14" min="8" max="48" class="styled-input" style="width: 70px;">
-                            <span style="color: var(--text-muted); font-size: 12px;">px</span>
-                        </div>
+                        <label class="modal-label" for="settingFontSize">Font Size (px)</label>
+                        <input type="number" id="settingFontSize" class="modal-input" min="10" max="32" value="14" style="width: 70px;">
                     </div>
 
                     <div class="modal-row">
-                        <label>Line Spacing</label>
-                        <input type="number" id="lineHeightInput" value="1.5" step="0.1" min="1.0" max="3.0" class="styled-input" style="width: 70px;">
+                        <label class="modal-label" for="settingLineHeight">Line Height</label>
+                        <input type="number" id="settingLineHeight" class="modal-input" min="1.1" max="2.4" step="0.05" value="1.55" style="width: 70px;">
                     </div>
+
+                    <div class="modal-row">
+                        <label class="modal-label" for="settingTabSize">Tab Indentation</label>
+                        <select id="settingTabSize" class="select-lang" style="width: 170px;">
+                            <option value="4">4 Spaces</option>
+                            <option value="2">2 Spaces</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-row">
+                        <label class="modal-label" for="settingLineNumbers">Show Line Numbers</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingLineNumbers" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="modal-row">
+                        <label class="modal-label" for="settingActiveLine">Highlight Active Line</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingActiveLine" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="modal-row">
+                        <label class="modal-label" for="settingAutoClose">Auto-Close Brackets & Quotes</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingAutoClose" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="modal-row">
+                        <label class="modal-label" for="settingSpellcheck">Spell Check</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingSpellcheck">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="modal-row">
+                        <label class="modal-label" for="settingSaveLocal">Persist Workspace Locally</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingSaveLocal" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnResetSettings" class="btn-secondary">Reset Defaults</button>
+                    <button type="button" id="btnSaveSettings" class="btn-primary">Done</button>
                 </div>
             </div>
         </div>
+
+        <!-- Go To Line Modal Dialog -->
+        <div class="modal-overlay" id="gotoModal" role="dialog" aria-modal="true" aria-labelledby="gotoModalTitle">
+            <div class="modal-card" style="max-width: 320px;">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="gotoModalTitle">Go to Line</h2>
+                    <button type="button" id="btnCloseGoto" class="header-btn" aria-label="Close Jump to Line">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label for="gotoLineInput" class="modal-label" id="gotoPromptLabel">Line number (1 - 1):</label>
+                    <input type="number" id="gotoLineInput" class="modal-input" min="1" value="1" style="width: 100%;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnCancelGoto" class="btn-secondary">Cancel</button>
+                    <button type="button" id="btnExecuteGoto" class="btn-primary">Jump</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications Live Region -->
+        <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+        <!-- Global Tooltip Element -->
+        <div class="app-tooltip" id="appTooltip" aria-hidden="true"></div>
     </div>
 
-    <!-- Tooltip Element -->
-    <div id="customTooltip" class="custom-tooltip"></div>
-
+    <!-- ==========================================================================
+       JAVASCRIPT ARCHITECTURE — Modular, Defensive, High Performance
+       ========================================================================== -->
     <script>
         /**
-         * SYNTAX HIGHLIGHTER ENGINE
-         * Dependency-free regex lexer.
+         * WebAssembly Accelerated Text Metrics Engine
+         * Evaluates line and word counts at native CPU speeds.
          */
-        const SyntaxHighlighter = {
-            GRAMMAR: {
-                json: {
-                    'string': /"(?:\\.|[^"\\])*"(?=\s*:)/, 
-                    'string value': /"(?:\\.|[^"\\])*"/,    
-                    'boolean': /\b(?:true|false|null)\b/,
-                    'number': /\b-?\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/i,
-                    'operator': /:/,
-                    'punctuation': /[{}[\](),]/,
-                },
-                javascript: {
-                    'comment': /(\/\/.*)|(\/\*[\s\S]*?\*\/)/,
-                    'string': /(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/,
-                    'keyword': /\b(?:const|let|var|if|else|for|while|do|async|await|function|return|new|import|export|from|class|extends|super|this|switch|case|default|break|continue|try|catch|finally|throw|delete|typeof|instanceof|void)\b/,
-                    'boolean': /\b(?:true|false|null|undefined)\b/,
-                    'function': /\b[a-z_][A-Za-z0-9_]*(?=\s*\()/i,
-                    'number': /\b-?\d+(?:\.\d+)?\b/,
-                    'class-name': /\b[A-Z][A-Za-z0-9_]+\b/,
-                    'operator': /=>|\.\.\.|[|&^!~*\/%<>=+-]=?|&&|\|\||\?/,
-                    'punctuation': /[{}[\]();,.:]/,
-                },
-                python: {
-                    'comment': /#.*/,
-                    'string': /(?:'''[\s\S]*?'''|"""[\s\S]*?"""|'(?:\\'|[^'])*'|"(?:\\"|[^"])*")/,
-                    'keyword': /\b(?:def|class|if|else|elif|for|while|return|import|from|as|try|except|finally|with|lambda|and|or|not|is|in|pass|break|continue|global|nonlocal)\b/,
-                    'function': /\b[a-z_][A-Za-z0-9_]*(?=\s*\()/i,
-                    'boolean': /\b(?:True|False|None)\b/,
-                    'number': /\b-?\d+(?:\.\d+)?\b/,
-                    'operator': /([*\/%+\-&|~^<>=!]=?|[*\/]=|\/\/|@)/,
-                    'punctuation': /[{}[\]();,.:]/,
-                },
-                lua: {
-                    'comment': /--.*|--\[\[[\s\S]*?\]\]/,
-                    'string': /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\[\[[\s\S]*?\]\]/,
-                    'keyword': /\b(?:function|end|if|then|else|elseif|for|while|do|return|local|and|or|not|break|repeat|until|in)\b/,
-                    'function': /\b[a-z_][A-Za-z0-9_]*(?=\s*\()/,
-                    'boolean': /\b(?:true|false|nil)\b/,
-                    'number': /\b-?\d+(?:\.\d+)?\b/,
-                    'operator': /[+\-%*\/#^=~]=?|~=|[<>]=?|\.\.\.?/,
-                    'punctuation': /[{}[\]();,.:]/,
-                },
-                html: {
-                    'comment': /<!--[\s\S]*?-->/,
-                    'doctype': /<!DOCTYPE[\s\S]+?>/i,
-                    'tag': /<\/?[\w:-]+\b/, 
-                    'attr-value': /("|')(?:\\\1|.)*?\1/,
-                    'attr-name': /[\w:-]+(?=\s*=\s*["'])/, 
-                    'punctuation': /\/?>|=/
-                },
-                css: {
-                    'comment': /\/\*[\s\S]*?\*\//,
-                    'selector': /[^{}\s][^{}]*(?=\s*\{)/,
-                    'property': /[\w-]+(?=\s*:)/,
-                    'string': /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/,
-                    'function': /\b(?:rgb|rgba|url|calc|var|min|max|clamp)\b/,
-                    'number': /\b-?\d+(?:\.\d+)?(?:px|em|rem|%|vw|vh|deg|s|ms)?\b/,
-                },
-                bash: {
-                    'comment': /#.*/,
-                    'string': /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/,
-                    'keyword': /\b(?:if|then|else|elif|fi|for|while|in|do|done|case|esac|function|return|exit|echo|printf|read|source|export|local)\b/,
-                    'variable': /\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[^}]+\}/,
-                    'function': /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\(\))/,
-                    'operator': /&&|\|\||;;|\||&|>|<|!/,
-                    'number': /\b\d+\b/
-                },
-                sql: {
-                    'comment': /--.*|\/\*[\s\S]*?\*\//,
-                    'string': /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"/,
-                    'keyword': /\b(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|AND|OR|NOT|IN|AS|JOIN|INNER|LEFT|RIGHT|OUTER|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|CREATE|ALTER|DROP|TABLE|INDEX|VIEW|UNION|ALL)\b/i,
-                    'function': /\b(?:COUNT|SUM|AVG|MIN|MAX|COALESCE|CAST)\b/i,
-                    'number': /\b-?\d+(?:\.\d+)?\b/,
-                    'operator': /[<>!=]=?|[+\-*/%]/,
-                    'punctuation': /[(),;.]/
-                },
-                cpp: {
-                    'comment': /(\/\/.*)|(\/\*[\s\S]*?\*\/)/,
-                    'string': /"(?:\\"|[^"])*"/,
-                    'keyword': /\b(?:int|float|double|char|void|if|else|for|while|do|switch|case|default|break|continue|return|struct|class|public|private|protected|static|const|virtual|override|new|delete|using|namespace|include|template|typename|bool|auto)\b/,
-                    'boolean': /\b(?:true|false)\b/,
-                    'number': /\b-?\d+(?:\.\d+)?\b/,
-                    'operator': /[+\-*\/%&|^!~=<>]+/,
-                    'punctuation': /[{}[\]();,.:]/,
-                },
-                markdown: {
-                    'comment': /<!--[\s\S]*?-->/,
-                    'variable': /\[.*?\]\(.*?\)|!\[.*?\]\(.*?\)/, 
-                    'keyword': /^#{1,6}.*$/m, 
-                    'string': /`[^`]+`/, 
-                    'function': /\*\*.*?\*\*|__.*?__/, 
-                    'operator': /\*.*?\*|_.*?_/, 
-                    'punctuation': /^[*\-+]\s|\d+\.\s/m 
-                }
-            },
+        const WasmTextEngine = (() => {
+            // Pre-compiled base64 WebAssembly binary (190 bytes)
+            const wasmBase64 = 'AGFzbQEAAAABBgFgAX8BfwMDAgAABQMBAAEHJgMGbWVtb3J5AgALY291bnRfbGluZXMAAAtjb3VudF93b3JkcwABCnoCOgECfwJAA0AgASAATg0BIAEtAABBCkYEQCACQQFqIQILIAFBAWohAQwACwsgAEUEf0EABSACQQFqCws9AQN/AkADQCABIABODQEgAS0AAEEgSwRAIANFBEAgAkEBaiECQQEhAwsFQQAhAwsgAUEBaiEBDAALCyACCw==';
+            let wasmInstance = null;
+            let wasmMemory = null;
+            const encoder = new TextEncoder();
 
-            highlight(code, lang) {
+            async function init() {
+                try {
+                    const binary = Uint8Array.from(atob(wasmBase64), c => c.charCodeAt(0));
+                    const { instance } = await WebAssembly.instantiate(binary);
+                    wasmInstance = instance;
+                    wasmMemory = new Uint8Array(instance.exports.memory.buffer);
+                    return true;
+                } catch (e) {
+                    console.warn('[EditPad] WebAssembly initialization fallback to JS:', e);
+                    return false;
+                }
+            }
+
+            function analyze(text) {
+                if (!wasmInstance) {
+                    // Fallback to JS analysis
+                    const lines = text === '' ? 1 : text.split('\n').length;
+                    const words = (text.trim().match(/\S+/g) || []).length;
+                    return { lines, words, chars: text.length, wasm: false };
+                }
+
+                const encoded = encoder.encode(text);
+                const len = encoded.length;
+
+                // Ensure memory has enough capacity (grow if needed)
+                if (len > wasmMemory.length) {
+                    const pagesNeeded = Math.ceil((len - wasmMemory.length) / 65536);
+                    wasmInstance.exports.memory.grow(pagesNeeded);
+                    wasmMemory = new Uint8Array(wasmInstance.exports.memory.buffer);
+                }
+
+                wasmMemory.set(encoded, 0);
+                const lines = wasmInstance.exports.count_lines(len);
+                const words = wasmInstance.exports.count_words(len);
+
+                return {
+                    lines: Math.max(1, lines),
+                    words: words,
+                    chars: text.length,
+                    wasm: true
+                };
+            }
+
+            return { init, analyze };
+        })();
+
+        /**
+         * Comprehensive Multi-Language Syntax Lexer Engine
+         * Order-based single pass token matching to prevent comment/string collisions.
+         */
+        const SyntaxEngine = (() => {
+            // Escape HTML characters
+            function escapeHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            // Language grammar rules
+            const GRAMMARS = {
+                assembly: [
+                    { type: 'comment', regex: /;[^\r\n]*/ },
+                    { type: 'string', regex: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'register', regex: /\b(?:rax|rbx|rcx|rdx|rsi|rdi|rbp|rsp|r8|r9|r10|r11|r12|r13|r14|r15|eax|ebx|ecx|edx|esi|edi|ebp|esp|ax|bx|cx|dx|al|ah|bl|bh|cl|ch|dl|dh|sil|dil|bpl|spl|r8d|r9d|r10d|r11d|r12d|r13d|r14d|r15d|r8w|r9w|r10w|r11w|r12w|r13w|r14w|r15w|r8b|r9b|r10b|r11b|r12b|r13b|r14b|r15b|rip|xmm\d+|ymm\d+|zmm\d+)\b/i },
+                    { type: 'directive', regex: /\b(?:section|segment|data\??|code|const|extrn|extern|proc|endp|end|include|includelib|global|public|db|dw|dd|dq|dt|equ|org|byte|word|dword|qword|ptr|title|subttl|page)\b/i },
+                    { type: 'keyword', regex: /\b(?:mov|lea|push|pop|call|ret|add|sub|inc|dec|mul|imul|div|idiv|xor|or|and|not|neg|shl|shr|sar|rol|ror|cmp|test|jmp|je|jne|jz|jnz|jg|jge|jl|jle|ja|jae|jb|jbe|nop|syscall|int|enter|leave|rep|repe|repne|movsb|movsd|movsq|stosb|stosd|stosq)\b/i },
+                    { type: 'number', regex: /\b(?:0x[0-9a-fA-F]+|[0-9]+[hH]|[0-1]+[bB]|\d+)\b/ },
+                    { type: 'operator', regex: /[+\-*\/%&|^!~=<>]+/ },
+                    { type: 'punctuation', regex: /[[\](),:]/ }
+                ],
+                javascript: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/ },
+                    { type: 'keyword', regex: /\b(?:const|let|var|function|return|if|else|for|while|do|switch|case|default|break|continue|try|catch|finally|throw|new|class|extends|super|this|import|export|from|as|default|async|await|typeof|instanceof|void|delete|in|of|yield)\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|null|undefined|NaN)\b/ },
+                    { type: 'number', regex: /\b(?:0x[0-9a-fA-F]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?)\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_$][a-zA-Z0-9_$]*(?=\s*\()/ },
+                    { type: 'type', regex: /\b[A-Z][a-zA-Z0-9_$]*\b/ },
+                    { type: 'operator', regex: /=>|\.{3}|[+\-*\/%&|^!~=<>?:]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                typescript: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/ },
+                    { type: 'keyword', regex: /\b(?:const|let|var|function|return|if|else|for|while|do|switch|case|default|break|continue|try|catch|finally|throw|new|class|extends|super|this|import|export|from|as|async|await|typeof|instanceof|interface|type|enum|implements|declare|namespace|abstract|readonly|public|private|protected|override|keyof)\b/ },
+                    { type: 'type', regex: /\b(?:string|number|boolean|any|unknown|never|void|object|symbol|bigint|[A-Z][a-zA-Z0-9_$]*)\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|null|undefined)\b/ },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_$][a-zA-Z0-9_$]*(?=\s*[\(<])/ },
+                    { type: 'operator', regex: /=>|[+\-*\/%&|^!~=<>?:]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                python: [
+                    { type: 'comment', regex: /#.*/ },
+                    { type: 'string', regex: /(?:'''[\s\S]*?'''|"""[\s\S]*?"""|'(?:\\'|[^'])*'|"(?:\\"|[^"])*")/ },
+                    { type: 'keyword', regex: /\b(?:def|class|return|if|elif|else|for|while|try|except|finally|with|as|import|from|lambda|yield|pass|break|continue|global|nonlocal|raise|assert|async|await|match|case)\b/ },
+                    { type: 'boolean', regex: /\b(?:True|False|None)\b/ },
+                    { type: 'number', regex: /\b(?:0x[0-9a-fA-F]+|\d+(?:\.\d+)?)\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/ },
+                    { type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/ },
+                    { type: 'operator', regex: /[+\-*\/%&|^!~=<>]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,:.]/ }
+                ],
+                cpp: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'directive', regex: /#\s*(?:include|define|undef|ifdef|ifndef|if|elif|else|endif|pragma)\b[^\r\n]*/ },
+                    { type: 'keyword', regex: /\b(?:int|char|float|double|void|bool|auto|struct|class|enum|union|public|private|protected|virtual|override|constexpr|const|static|inline|template|typename|namespace|using|new|delete|if|else|for|while|do|switch|case|default|break|continue|return|try|catch|throw|sizeof)\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|nullptr|NULL)\b/ },
+                    { type: 'number', regex: /\b(?:0x[0-9a-fA-F]+|\d+(?:\.\d+)?(?:f|u|l|ul|ll)?)\b/i },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/ },
+                    { type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/ },
+                    { type: 'operator', regex: /::|->|[+\-*\/%&|^!~=<>?]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                csharp: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:\$?"(?:\\.|[^"\\])*"|@"(?:""|[^"])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'keyword', regex: /\b(?:abstract|as|base|bool|break|byte|case|catch|char|checked|class|const|continue|decimal|default|delegate|do|double|else|enum|event|explicit|extern|false|finally|fixed|float|for|foreach|goto|if|implicit|in|int|interface|internal|is|lock|long|namespace|new|null|object|operator|out|override|params|private|protected|public|readonly|ref|return|sbyte|sealed|short|sizeof|stackalloc|static|string|struct|switch|this|throw|true|try|typeof|uint|ulong|unchecked|unsafe|ushort|using|virtual|void|volatile|while|async|await|var|record)\b/ },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?(?:m|f|d|l|u)?\b/i },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*[\(<])/ },
+                    { type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/ },
+                    { type: 'operator', regex: /[+\-*\/%&|^!~=<>?]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                rust: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:r#".*?"#|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'keyword', regex: /\b(?:fn|let|mut|struct|enum|trait|impl|pub|use|mod|const|static|if|else|match|loop|while|for|in|return|break|continue|unsafe|async|await|type|where|as|move|ref|self|Self)\b/ },
+                    { type: 'type', regex: /\b(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|bool|char|str|String|Vec|Option|Result|[A-Z][a-zA-Z0-9_]*)\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|Some|None|Ok|Err)\b/ },
+                    { type: 'number', regex: /\b(?:0x[0-9a-fA-F_]+|\d[\d_]*(?:\.\d[\d_]*)?)\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*[\(!])/ },
+                    { type: 'operator', regex: /=>|->|[+\-*\/%&|^!~=<>?]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                go: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:`(?:\\`|[^`])*`|"(?:\\.|[^"\\])*")/ },
+                    { type: 'keyword', regex: /\b(?:func|package|import|return|var|const|type|struct|interface|map|chan|if|else|for|range|switch|case|default|fallthrough|select|go|defer|break|continue|goto)\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|nil|iota)\b/ },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/ },
+                    { type: 'type', regex: /\b(?:int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|uintptr|float32|float64|complex64|complex128|byte|rune|string|bool|error|[A-Z][a-zA-Z0-9_]*)\b/ },
+                    { type: 'operator', regex: /:=|[+\-*\/%&|^!~=<>]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                java: [
+                    { type: 'comment', regex: /\/\/.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'keyword', regex: /\b(?:public|private|protected|class|interface|enum|extends|implements|static|final|abstract|void|return|new|if|else|for|while|do|switch|case|default|break|continue|try|catch|finally|throw|throws|import|package|this|super|instanceof)\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|null)\b/ },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?(?:f|l|d)?\b/i },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/ },
+                    { type: 'type', regex: /\b(?:int|boolean|char|byte|short|long|float|double|String|[A-Z][a-zA-Z0-9_]*)\b/ },
+                    { type: 'operator', regex: /[+\-*\/%&|^!~=<>]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,.]/ }
+                ],
+                html: [
+                    { type: 'comment', regex: /<!--[\s\S]*?-->/ },
+                    { type: 'directive', regex: /<!DOCTYPE[\s\S]*?>/i },
+                    { type: 'tag', regex: /<\/?[\w:-]+\b/ },
+                    { type: 'attribute', regex: /\b[\w:-]+(?=\s*=)/ },
+                    { type: 'string', regex: /(?:"[^"]*"|'[^']*')/ },
+                    { type: 'punctuation', regex: /\/?>/ }
+                ],
+                css: [
+                    { type: 'comment', regex: /\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:"[^"]*"|'[^']*')/ },
+                    { type: 'directive', regex: /@(?:media|import|keyframes|font-face|charset|supports)\b[^{;]*/ },
+                    { type: 'attribute', regex: /[\w-]+(?=\s*:)/ },
+                    { type: 'function', regex: /\b(?:url|rgb|rgba|hsl|hsla|calc|var|min|max|clamp)\b/ },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw|deg|s|ms)?\b/ },
+                    { type: 'operator', regex: /[:!]/ },
+                    { type: 'punctuation', regex: /[{}[\](),;]/ }
+                ],
+                bash: [
+                    { type: 'comment', regex: /#.*/ },
+                    { type: 'string', regex: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'variable', regex: /\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[^}]+\}/ },
+                    { type: 'keyword', regex: /\b(?:if|then|else|elif|fi|case|esac|for|while|until|do|done|in|function|select|time|return|exit|echo|printf|cd|export|local|source)\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\(\))/ },
+                    { type: 'operator', regex: /&&|\|\||[|&><!=]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();]/ }
+                ],
+                sql: [
+                    { type: 'comment', regex: /--.*|\/\*[\s\S]*?\*\// },
+                    { type: 'string', regex: /(?:'(?:''|[^'])*'|"(?:\\.|[^"\\])*")/ },
+                    { type: 'keyword', regex: /\b(?:SELECT|FROM|WHERE|INSERT|INTO|UPDATE|DELETE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|CROSS|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|UNION|ALL|CREATE|TABLE|ALTER|DROP|INDEX|VIEW|PRIMARY|KEY|FOREIGN|REFERENCES|NOT|NULL|AND|OR|IN|EXISTS|BETWEEN|LIKE|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END)\b/i },
+                    { type: 'function', regex: /\b(?:COUNT|SUM|AVG|MIN|MAX|COALESCE|NOW|CONCAT|SUBSTRING|TRIM|ROUND|CAST)\b/i },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?\b/ },
+                    { type: 'operator', regex: /[=<>!+\-*\/%]+/ },
+                    { type: 'punctuation', regex: /[(),;.]/ }
+                ],
+                json: [
+                    { type: 'attribute', regex: /"(?:\\.|[^"\\])*"(?=\s*:)/ },
+                    { type: 'string', regex: /"(?:\\.|[^"\\])*"/ },
+                    { type: 'number', regex: /-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/ },
+                    { type: 'boolean', regex: /\b(?:true|false|null)\b/ },
+                    { type: 'operator', regex: /:/ },
+                    { type: 'punctuation', regex: /[{}[\](),]/ }
+                ],
+                yaml: [
+                    { type: 'comment', regex: /#.*/ },
+                    { type: 'attribute', regex: /^[ \t]*[\w.-]+(?=\s*:)/m },
+                    { type: 'string', regex: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+                    { type: 'boolean', regex: /\b(?:true|false|yes|no|null)\b/i },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?\b/ },
+                    { type: 'operator', regex: /[:-]/ }
+                ],
+                markdown: [
+                    { type: 'comment', regex: /<!--[\s\S]*?-->/ },
+                    { type: 'keyword', regex: /^#{1,6}\s+.*$/m },
+                    { type: 'string', regex: /`[^`]+`/ },
+                    { type: 'directive', regex: /```[\s\S]*?```/ },
+                    { type: 'function', regex: /\*\*.*?\*\*|__.*?__/ },
+                    { type: 'operator', regex: /\*.*?\*|_.*?_/ },
+                    { type: 'punctuation', regex: /^[*+-]\s+|\d+\.\s+/m }
+                ],
+                lua: [
+                    { type: 'comment', regex: /--\[\[[\s\S]*?\]\]|--.*/ },
+                    { type: 'string', regex: /(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\[\[[\s\S]*?\]\])/ },
+                    { type: 'keyword', regex: /\b(?:and|break|do|else|elseif|end|false|for|function|if|in|local|nil|not|or|repeat|return|then|true|until|while)\b/ },
+                    { type: 'function', regex: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/ },
+                    { type: 'number', regex: /\b\d+(?:\.\d+)?\b/ },
+                    { type: 'operator', regex: /~=|==|<=|>=|[+\-*\/%^#<>=.]+/ },
+                    { type: 'punctuation', regex: /[{}[\]();,:]/ }
+                ]
+            };
+
+            // Highlight source code string
+            function highlight(code, lang) {
                 if (!code) return '';
-                if (!lang || lang === 'plaintext') return this.escapeHtml(code);
-                
-                const alias = { 'xml': 'html', 'svg': 'html', 'sh': 'bash', 'js': 'javascript', 'ts': 'javascript', 'c': 'cpp', 'c++': 'cpp', 'yml': 'json' };
-                const effectiveLang = (alias[lang.toLowerCase()] || lang).toLowerCase();
+                if (!lang || lang === 'plaintext') return escapeHtml(code);
 
-                if (effectiveLang === 'html') {
-                    return this.highlightHtml(code);
-                }
-                return this._highlightBasic(code, effectiveLang);
-            },
+                const grammar = GRAMMARS[lang.toLowerCase()];
+                if (!grammar) return escapeHtml(code);
 
-            highlightHtml(code) {
-                const regex = /(<script[\s\S]*?>)([\s\S]*?)(<\/script>)|(<style[\s\S]*?>)([\s\S]*?)(<\/style>)/gi;
+                // Build composite regex with match order precedence
+                const patterns = grammar.map((rule, idx) => `(?<g${idx}>${rule.regex.source})`);
+                const masterRegex = new RegExp(patterns.join('|'), 'gm');
+
+                let html = '';
                 let lastIndex = 0;
-                let result = '';
                 let match;
 
-                while ((match = regex.exec(code)) !== null) {
-                    result += this._highlightBasic(code.slice(lastIndex, match.index), 'html');
-                    if (match[1]) {
-                        result += this._highlightBasic(match[1], 'html');
-                        result += this._highlightBasic(match[2], 'javascript');
-                        result += this._highlightBasic(match[3], 'html');
-                    } else if (match[4]) {
-                        result += this._highlightBasic(match[4], 'html');
-                        result += this._highlightBasic(match[5], 'css');
-                        result += this._highlightBasic(match[6], 'html');
+                while ((match = masterRegex.exec(code)) !== null) {
+                    // Append raw plain text before match
+                    if (match.index > lastIndex) {
+                        html += escapeHtml(code.slice(lastIndex, match.index));
                     }
-                    lastIndex = regex.lastIndex;
-                }
-                result += this._highlightBasic(code.slice(lastIndex), 'html');
-                return result;
-            },
 
-            _highlightBasic(code, lang) {
-                const grammar = this.GRAMMAR[lang];
-                if (!grammar) return this.escapeHtml(code);
-                let tokens = [code];
-
-                for (const tokenName in grammar) {
-                    const pattern = grammar[tokenName];
-                    const newTokens = [];
-                    const regex = new RegExp(pattern, 'g'); 
-
-                    for (let i = 0; i < tokens.length; i++) {
-                        const token = tokens[i];
-                        if (typeof token !== 'string') { newTokens.push(token); continue; }
-
-                        let lastIdx = 0;
-                        let match;
-                        regex.lastIndex = 0;
-
-                        while ((match = regex.exec(token)) !== null) {
-                            if (match.index > lastIdx) newTokens.push(token.slice(lastIdx, match.index));
-                            newTokens.push({ type: tokenName, content: match[0] });
-                            lastIdx = regex.lastIndex;
-                            if (match.index === regex.lastIndex) regex.lastIndex++;
+                    // Find which group matched
+                    let tokenType = 'punctuation';
+                    for (let i = 0; i < grammar.length; i++) {
+                        if (match.groups && match.groups[`g${i}`] !== undefined) {
+                            tokenType = grammar[i].type;
+                            break;
                         }
-                        if (lastIdx < token.length) newTokens.push(token.slice(lastIdx));
                     }
-                    tokens = newTokens;
+
+                    html += `<span class="token-${tokenType}">${escapeHtml(match[0])}</span>`;
+                    lastIndex = masterRegex.lastIndex;
+
+                    if (match.index === masterRegex.lastIndex) {
+                        masterRegex.lastIndex++;
+                    }
                 }
 
-                return tokens.map(t => {
-                    if (typeof t === 'string') return this.escapeHtml(t);
-                    let className = 'token ' + t.type.replace(' ', '-');
-                    return `<span class="${className}">${this.escapeHtml(t.content)}</span>`;
-                }).join('');
-            },
+                if (lastIndex < code.length) {
+                    html += escapeHtml(code.slice(lastIndex));
+                }
 
-            escapeHtml(str) {
-                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return html;
             }
-        };
 
-        /* --- EDITOR APP LOGIC --- */
-        document.addEventListener('DOMContentLoaded', () => {
+            return { highlight, GRAMMARS };
+        })();
+
+        /**
+         * Main Application Controller & State Architecture
+         */
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize WASM engine in background
+            await WasmTextEngine.init();
+
+            // DOM Element References
             const textarea = document.getElementById('editing');
             const pre = document.getElementById('highlighting');
+            const gutter = document.getElementById('editorGutter');
+            const editorContainer = document.getElementById('editorContainer');
+            const activeLineBackdrop = document.getElementById('activeLineBackdrop');
             const langSelect = document.getElementById('langSelect');
-            const filenameInput = document.getElementById('filenameInput');
-            const fileInput = document.getElementById('fileInput');
-            const stats = document.getElementById('stats');
-            const charCount = document.getElementById('charCount');
-            
-            // UI Components
-            const findBar = document.getElementById('findBar');
+            const filePicker = document.getElementById('filePicker');
+            const tabList = document.getElementById('tabList');
+            const toastContainer = document.getElementById('toastContainer');
+            const tooltipEl = document.getElementById('appTooltip');
+            const dragOverlay = document.getElementById('dragOverlay');
+
+            // Find and Replace DOM References
+            const findPanel = document.getElementById('findPanel');
             const findInput = document.getElementById('findInput');
+            const replaceInput = document.getElementById('replaceInput');
+            const matchBadge = document.getElementById('matchBadge');
+            const btnToggleCase = document.getElementById('btnToggleCase');
+            const btnToggleWord = document.getElementById('btnToggleWord');
+            const btnToggleRegex = document.getElementById('btnToggleRegex');
+
+            // Status Bar DOM References
+            const statusPos = document.getElementById('statusPos');
+            const statusSelection = document.getElementById('statusSelection');
+            const statusEol = document.getElementById('statusEol');
+            const statusSpaces = document.getElementById('statusSpaces');
+            const statusMetrics = document.getElementById('statusMetrics');
+
+            // Modals DOM References
             const settingsModal = document.getElementById('settingsModal');
-            
-            // Custom Tooltip Engine
-            const tooltipEl = document.getElementById('customTooltip');
-            document.querySelectorAll('[data-tooltip]').forEach(el => {
-                el.addEventListener('mouseenter', () => {
-                    tooltipEl.textContent = el.getAttribute('data-tooltip');
-                    tooltipEl.classList.add('show');
-                    
-                    const rect = el.getBoundingClientRect();
-                    // Position primarily below
-                    let top = rect.bottom + 8;
-                    let left = rect.left + (rect.width / 2) - (tooltipEl.offsetWidth / 2);
-                    
-                    // Prevent off-screen
-                    if (left < 8) left = 8;
-                    if (left + tooltipEl.offsetWidth > window.innerWidth - 8) {
-                        left = window.innerWidth - tooltipEl.offsetWidth - 8;
-                    }
-                    
-                    tooltipEl.style.top = top + 'px';
-                    tooltipEl.style.left = left + 'px';
-                });
-                
-                el.addEventListener('mouseleave', () => tooltipEl.classList.remove('show'));
-                el.addEventListener('click', () => tooltipEl.classList.remove('show'));
-            });
+            const gotoModal = document.getElementById('gotoModal');
+            const gotoLineInput = document.getElementById('gotoLineInput');
+            const gotoPromptLabel = document.getElementById('gotoPromptLabel');
 
-            // Local Storage & App Settings System
-            const defaultSettings = {
-                saveLocal: true,
-                spellCheck: false,
-                autoCorrect: false,
+            // Settings Inputs
+            const settingTheme = document.getElementById('settingTheme');
+            const settingFontFamily = document.getElementById('settingFontFamily');
+            const settingFontSize = document.getElementById('settingFontSize');
+            const settingLineHeight = document.getElementById('settingLineHeight');
+            const settingTabSize = document.getElementById('settingTabSize');
+            const settingLineNumbers = document.getElementById('settingLineNumbers');
+            const settingActiveLine = document.getElementById('settingActiveLine');
+            const settingAutoClose = document.getElementById('settingAutoClose');
+            const settingSpellcheck = document.getElementById('settingSpellcheck');
+            const settingSaveLocal = document.getElementById('settingSaveLocal');
+
+            // Application Settings State
+            const DEFAULT_SETTINGS = {
                 theme: 'dark',
-                bgColor: '#18181b',
-                textColor: '#e4e4e7',
-                fontFamily: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace',
+                fontFamily: '"JetBrains Mono", "Cascadia Code", Consolas, monospace',
                 fontSize: 14,
-                lineHeight: 1.5
-            };
-            
-            let appSettings = JSON.parse(localStorage.getItem('editpad_settings')) || defaultSettings;
-
-            const toggles = {
-                saveLocal: document.getElementById('saveLocalToggle'),
-                spellCheck: document.getElementById('spellCheckToggle'),
-                autoCorrect: document.getElementById('autoCorrectToggle')
-            };
-
-            const inputs = {
-                theme: document.getElementById('themeSelect'),
-                bgColor: document.getElementById('bgColorInput'),
-                textColor: document.getElementById('textColorInput'),
-                fontFamily: document.getElementById('fontSelect'),
-                fontSize: document.getElementById('fontSizeInput'),
-                lineHeight: document.getElementById('lineHeightInput')
+                lineHeight: 1.55,
+                tabSize: 4,
+                showLineNumbers: true,
+                highlightActiveLine: true,
+                autoCloseBrackets: true,
+                spellcheck: false,
+                saveLocal: true,
+                wordWrap: false
             };
 
-            function applySettingsToDOM() {
-                // Apply Toggles
-                textarea.spellcheck = appSettings.spellCheck;
-                textarea.setAttribute('autocorrect', appSettings.autoCorrect ? 'on' : 'off');
-                textarea.setAttribute('autocapitalize', appSettings.autoCorrect ? 'on' : 'off');
-                
-                // Set UI state
-                toggles.saveLocal.checked = appSettings.saveLocal;
-                toggles.spellCheck.checked = appSettings.spellCheck;
-                toggles.autoCorrect.checked = appSettings.autoCorrect;
-                
-                inputs.theme.value = appSettings.theme;
-                inputs.bgColor.value = appSettings.bgColor;
-                inputs.textColor.value = appSettings.textColor;
-                inputs.fontFamily.value = appSettings.fontFamily;
-                inputs.fontSize.value = appSettings.fontSize;
-                inputs.lineHeight.value = appSettings.lineHeight;
+            let appSettings = Object.assign({}, DEFAULT_SETTINGS);
+            try {
+                const stored = localStorage.getItem('editpad_v2_settings');
+                if (stored) Object.assign(appSettings, JSON.parse(stored));
+            } catch (e) {}
 
-                // Apply CSS Variables
-                const root = document.documentElement;
-                if(appSettings.theme === 'light') {
-                    document.body.classList.add('light-mode');
-                    if(appSettings.bgColor === defaultSettings.bgColor) appSettings.bgColor = '#ffffff';
-                    if(appSettings.textColor === defaultSettings.textColor) appSettings.textColor = '#18181b';
-                } else {
-                    document.body.classList.remove('light-mode');
+            // Find State
+            const findState = {
+                matchCase: false,
+                wholeWord: false,
+                useRegex: false,
+                matches: [],
+                currentIndex: -1
+            };
+
+            // Tabs / Document Management State
+            let tabs = [];
+            let activeTabId = null;
+            let tabCounter = 1;
+
+            // Undo / Redo History Stack per Tab
+            const historyMap = new Map(); // tabId -> { undo: [], redo: [], lastText: '' }
+
+            function getHistory(tabId) {
+                if (!historyMap.has(tabId)) {
+                    historyMap.set(tabId, { undo: [], redo: [], lastText: '' });
+                }
+                return historyMap.get(tabId);
+            }
+
+            function pushHistory(tabId, text, selStart, selEnd) {
+                const hist = getHistory(tabId);
+                if (hist.lastText === text) return;
+                hist.undo.push({ text, selStart, selEnd });
+                if (hist.undo.length > 80) hist.undo.shift();
+                hist.redo = [];
+                hist.lastText = text;
+            }
+
+            // Language Extension Mapping
+            const EXT_TO_LANG = {
+                'asm': 'assembly', 's': 'assembly', 'inc': 'assembly',
+                'js': 'javascript', 'mjs': 'javascript', 'cjs': 'javascript',
+                'ts': 'typescript', 'tsx': 'typescript', 'jsx': 'javascript',
+                'py': 'python', 'pyw': 'python',
+                'html': 'html', 'htm': 'html', 'xhtml': 'html',
+                'css': 'css', 'scss': 'css',
+                'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp', 'hpp': 'cpp', 'cc': 'cpp',
+                'cs': 'csharp', 'rs': 'rust', 'go': 'go', 'java': 'java',
+                'sh': 'bash', 'bash': 'bash', 'zsh': 'bash',
+                'sql': 'sql', 'json': 'json', 'yaml': 'yaml', 'yml': 'yaml',
+                'md': 'markdown', 'markdown': 'markdown', 'lua': 'lua', 'txt': 'plaintext'
+            };
+
+            const LANG_TO_EXT = {
+                'assembly': 'asm', 'javascript': 'js', 'typescript': 'ts',
+                'python': 'py', 'html': 'html', 'css': 'css', 'cpp': 'cpp',
+                'csharp': 'cs', 'rust': 'rs', 'go': 'go', 'java': 'java',
+                'bash': 'sh', 'sql': 'sql', 'json': 'json', 'yaml': 'yaml',
+                'markdown': 'md', 'lua': 'lua', 'plaintext': 'txt'
+            };
+
+            // SVG Icon Generator for File Types (No Emojis!)
+            function getFileIconSvg(lang) {
+                const icons = {
+                    assembly: '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',
+                    javascript: '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="10" y1="13" x2="10" y2="17"/><line x1="14" y1="13" x2="14" y2="17"/></svg>',
+                    python: '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3h10V7a5 5 0 0 0-5-5z"/><path d="M12 22a5 5 0 0 0 5-5v-3H7v3a5 5 0 0 0 5 5z"/></svg>',
+                    html: '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+                    css: '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>',
+                    default: '<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+                };
+                return icons[lang] || icons.default;
+            }
+
+            // Toast Notification Dispatcher
+            function showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'toast-item';
+                toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>${escapeHtml(message)}</span>`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.2s';
+                    setTimeout(() => toast.remove(), 200);
+                }, 3000);
+            }
+
+            function escapeHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            // =========================================================================
+            // TAB MANAGEMENT SYSTEM
+            // =========================================================================
+            function createTab(filename = null, content = '', lang = null) {
+                const id = 'tab_' + Date.now() + '_' + (tabCounter++);
+                const resolvedLang = lang || (filename ? (EXT_TO_LANG[filename.split('.').pop().toLowerCase()] || 'plaintext') : 'assembly');
+                const resolvedName = filename || `untitled-${tabs.length + 1}.${LANG_TO_EXT[resolvedLang] || 'asm'}`;
+
+                const tab = {
+                    id,
+                    name: resolvedName,
+                    content,
+                    lang: resolvedLang,
+                    isDirty: false,
+                    selStart: 0,
+                    selEnd: 0,
+                    scrollTop: 0,
+                    scrollLeft: 0
+                };
+
+                tabs.push(tab);
+                pushHistory(id, content, 0, 0);
+                renderTabs();
+                switchTab(id);
+                return tab;
+            }
+
+            function switchTab(id) {
+                if (activeTabId === id) return;
+
+                // Save current active tab state
+                const currentTab = tabs.find(t => t.id === activeTabId);
+                if (currentTab) {
+                    currentTab.content = textarea.value;
+                    currentTab.selStart = textarea.selectionStart;
+                    currentTab.selEnd = textarea.selectionEnd;
+                    currentTab.scrollTop = textarea.scrollTop;
+                    currentTab.scrollLeft = textarea.scrollLeft;
+                    currentTab.lang = langSelect.value;
                 }
 
-                root.style.setProperty('--bg-editor', appSettings.bgColor);
-                root.style.setProperty('--text-main', appSettings.textColor);
+                activeTabId = id;
+                const nextTab = tabs.find(t => t.id === id);
+                if (!nextTab) return;
+
+                textarea.value = nextTab.content;
+                langSelect.value = nextTab.lang;
+                textarea.selectionStart = nextTab.selStart || 0;
+                textarea.selectionEnd = nextTab.selEnd || 0;
+
+                renderTabs();
+                renderEditor();
+
+                textarea.scrollTop = nextTab.scrollTop || 0;
+                textarea.scrollLeft = nextTab.scrollLeft || 0;
+                pre.scrollTop = textarea.scrollTop;
+                pre.scrollLeft = textarea.scrollLeft;
+
+                textarea.focus();
+            }
+
+            function closeTab(id) {
+                const tabIndex = tabs.findIndex(t => t.id === id);
+                if (tabIndex === -1) return;
+
+                const tab = tabs[tabIndex];
+                if (tab.isDirty) {
+                    const confirmClose = confirm(`Save changes to ${tab.name} before closing?`);
+                    if (confirmClose) {
+                        saveFile();
+                    }
+                }
+
+                tabs.splice(tabIndex, 1);
+                historyMap.delete(id);
+
+                if (tabs.length === 0) {
+                    createTab('untitled.asm', '', 'assembly');
+                } else if (activeTabId === id) {
+                    const nextIndex = Math.max(0, tabIndex - 1);
+                    switchTab(tabs[nextIndex].id);
+                } else {
+                    renderTabs();
+                }
+            }
+
+            function renderTabs() {
+                tabList.innerHTML = '';
+                tabs.forEach(tab => {
+                    const tabEl = document.createElement('div');
+                    tabEl.className = `tab-item ${tab.id === activeTabId ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
+                    tabEl.setAttribute('role', 'tab');
+                    tabEl.setAttribute('aria-selected', tab.id === activeTabId ? 'true' : 'false');
+                    tabEl.innerHTML = `
+                        ${getFileIconSvg(tab.lang)}
+                        <span class="tab-title" title="${escapeHtml(tab.name)}">${escapeHtml(tab.name)}</span>
+                        <span class="tab-dirty-dot" title="Unsaved changes"></span>
+                        <button type="button" class="tab-close-btn" aria-label="Close ${escapeHtml(tab.name)}" title="Close Tab">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    `;
+
+                    tabEl.addEventListener('click', (e) => {
+                        if (e.target.closest('.tab-close-btn')) {
+                            e.stopPropagation();
+                            closeTab(tab.id);
+                        } else {
+                            switchTab(tab.id);
+                        }
+                    });
+
+                    // Double click to rename
+                    tabEl.addEventListener('dblclick', (e) => {
+                        if (e.target.closest('.tab-close-btn')) return;
+                        const newName = prompt('Rename document:', tab.name);
+                        if (newName && newName.trim() && newName !== tab.name) {
+                            tab.name = newName.trim();
+                            const ext = tab.name.split('.').pop().toLowerCase();
+                            if (EXT_TO_LANG[ext]) {
+                                tab.lang = EXT_TO_LANG[ext];
+                                langSelect.value = tab.lang;
+                            }
+                            renderTabs();
+                            renderEditor();
+                        }
+                    });
+
+                    tabList.appendChild(tabEl);
+                });
+            }
+
+            // =========================================================================
+            // EDITOR RENDERING & SYNTAX SYNCHRONIZATION
+            // =========================================================================
+            function renderEditor() {
+                const text = textarea.value;
+                const lang = langSelect.value;
+
+                // Syntax Highlight pre
+                let highlighted = SyntaxEngine.highlight(text, lang);
+                if (text.endsWith('\n') || text === '') {
+                    highlighted += '<br>';
+                }
+                pre.innerHTML = highlighted;
+
+                // Sync scrolls
+                pre.scrollTop = textarea.scrollTop;
+                pre.scrollLeft = textarea.scrollLeft;
+
+                // Update Line Numbers Gutter
+                const lines = text.split('\n');
+                const lineCount = Math.max(1, lines.length);
+
+                if (appSettings.showLineNumbers) {
+                    gutter.style.display = 'block';
+                    let gutterHtml = '';
+                    const cursorPos = textarea.selectionStart;
+                    const activeLineIndex = text.substring(0, cursorPos).split('\n').length;
+
+                    for (let i = 1; i <= lineCount; i++) {
+                        const isActive = i === activeLineIndex ? ' active' : '';
+                        gutterHtml += `<span class="line-number${isActive}" data-line="${i}">${i}</span>`;
+                    }
+                    gutter.innerHTML = gutterHtml;
+                    gutter.scrollTop = textarea.scrollTop;
+
+                    // Update active line highlight band
+                    if (appSettings.highlightActiveLine) {
+                        activeLineBackdrop.style.display = 'block';
+                        const lineHeightPx = appSettings.fontSize * appSettings.lineHeight;
+                        const topOffset = 16 + (activeLineIndex - 1) * lineHeightPx - textarea.scrollTop;
+                        activeLineBackdrop.style.top = topOffset + 'px';
+                        activeLineBackdrop.style.height = lineHeightPx + 'px';
+                    } else {
+                        activeLineBackdrop.style.display = 'none';
+                    }
+                } else {
+                    gutter.style.display = 'none';
+                    activeLineBackdrop.style.display = 'none';
+                }
+
+                // Telemetry & Metrics (WebAssembly Accelerated)
+                const metrics = WasmTextEngine.analyze(text);
+                statusMetrics.textContent = `${metrics.lines} ${metrics.lines === 1 ? 'line' : 'lines'} • ${metrics.words} words • ${metrics.chars} chars`;
+
+                // Cursor Position
+                const cursorPos = textarea.selectionStart;
+                const subStr = text.substring(0, cursorPos);
+                const currentLine = subStr.split('\n').length;
+                const currentColumn = subStr.length - subStr.lastIndexOf('\n');
+                statusPos.textContent = `Ln ${currentLine}, Col ${currentColumn}`;
+
+                // Selection Stats
+                const selLength = Math.abs(textarea.selectionEnd - textarea.selectionStart);
+                if (selLength > 0) {
+                    const selText = text.substring(textarea.selectionStart, textarea.selectionEnd);
+                    const selLines = selText.split('\n').length;
+                    statusSelection.style.display = 'inline-block';
+                    statusSelection.textContent = `Selected: ${selLength} chars (${selLines} ${selLines === 1 ? 'line' : 'lines'})`;
+                } else {
+                    statusSelection.style.display = 'none';
+                }
+
+                // Line Endings Check
+                statusEol.textContent = text.includes('\r\n') ? 'CRLF' : 'LF';
+
+                // Save active tab state
+                const activeTab = tabs.find(t => t.id === activeTabId);
+                if (activeTab) {
+                    activeTab.content = text;
+                    if (appSettings.saveLocal) {
+                        try {
+                            localStorage.setItem('editpad_v2_tabs', JSON.stringify(tabs.map(t => ({
+                                id: t.id, name: t.name, content: t.content, lang: t.lang, isDirty: t.isDirty
+                            }))));
+                            localStorage.setItem('editpad_v2_activetab', activeTabId);
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            // Gutter Line Click Navigation
+            gutter.addEventListener('click', (e) => {
+                const lineEl = e.target.closest('.line-number');
+                if (!lineEl) return;
+                const lineNum = parseInt(lineEl.getAttribute('data-line'), 10);
+                if (isNaN(lineNum)) return;
+
+                const lines = textarea.value.split('\n');
+                let pos = 0;
+                for (let i = 0; i < lineNum - 1 && i < lines.length; i++) {
+                    pos += lines[i].length + 1;
+                }
+                const endPos = pos + (lines[lineNum - 1] ? lines[lineNum - 1].length : 0);
+
+                textarea.focus();
+                textarea.setSelectionRange(pos, endPos);
+                renderEditor();
+            });
+
+            // Synchronize Scrolling
+            textarea.addEventListener('scroll', () => {
+                pre.scrollTop = textarea.scrollTop;
+                pre.scrollLeft = textarea.scrollLeft;
+                gutter.scrollTop = textarea.scrollTop;
+
+                if (appSettings.highlightActiveLine) {
+                    const text = textarea.value;
+                    const activeLineIndex = text.substring(0, textarea.selectionStart).split('\n').length;
+                    const lineHeightPx = appSettings.fontSize * appSettings.lineHeight;
+                    const topOffset = 16 + (activeLineIndex - 1) * lineHeightPx - textarea.scrollTop;
+                    activeLineBackdrop.style.top = topOffset + 'px';
+                }
+            });
+
+            // Input & Caret Events
+            textarea.addEventListener('input', () => {
+                const activeTab = tabs.find(t => t.id === activeTabId);
+                if (activeTab && !activeTab.isDirty) {
+                    activeTab.isDirty = true;
+                    renderTabs();
+                }
+                pushHistory(activeTabId, textarea.value, textarea.selectionStart, textarea.selectionEnd);
+                renderEditor();
+            });
+
+            ['click', 'keyup', 'select'].forEach(evt => {
+                textarea.addEventListener(evt, renderEditor);
+            });
+
+            // =========================================================================
+            // KEYBOARD EDITING SHORTCUTS & BEHAVIORS
+            // =========================================================================
+            textarea.addEventListener('keydown', (e) => {
+                const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                const mod = isMac ? e.metaKey : e.ctrlKey;
+
+                // 1. Tab & Shift+Tab Indentation / Outdent
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const indentSize = appSettings.tabSize;
+                    const indentStr = ' '.repeat(indentSize);
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const text = textarea.value;
+
+                    if (start === end) {
+                        // Single cursor insert
+                        textarea.setRangeText(indentStr, start, end, 'end');
+                    } else {
+                        // Multi-line block indent/outdent
+                        const startLineIdx = text.lastIndexOf('\n', start - 1) + 1;
+                        let endLineIdx = text.indexOf('\n', end);
+                        if (endLineIdx === -1) endLineIdx = text.length;
+
+                        const block = text.substring(startLineIdx, endLineIdx);
+                        const lines = block.split('\n');
+                        let newBlock = '';
+
+                        if (e.shiftKey) {
+                            // Outdent
+                            newBlock = lines.map(line => {
+                                if (line.startsWith(indentStr)) return line.substring(indentSize);
+                                if (line.startsWith(' ')) return line.replace(/^ +/, '');
+                                if (line.startsWith('\t')) return line.substring(1);
+                                return line;
+                            }).join('\n');
+                        } else {
+                            // Indent
+                            newBlock = lines.map(line => indentStr + line).join('\n');
+                        }
+
+                        textarea.setRangeText(newBlock, startLineIdx, endLineIdx, 'select');
+                    }
+                    renderEditor();
+                    return;
+                }
+
+                // 2. Smart Auto-Indent on Enter
+                if (e.key === 'Enter') {
+                    const start = textarea.selectionStart;
+                    const text = textarea.value;
+                    const lastNewline = text.lastIndexOf('\n', start - 1);
+                    const currentLine = text.substring(lastNewline + 1, start);
+                    const indentMatch = currentLine.match(/^[ \t]+/);
+                    let indent = indentMatch ? indentMatch[0] : '';
+
+                    // Check if current line ends with opening bracket or colon
+                    const trimmedBefore = currentLine.trimEnd();
+                    if (/[:{\[(]$/.test(trimmedBefore)) {
+                        indent += ' '.repeat(appSettings.tabSize);
+                    }
+
+                    if (indent.length > 0) {
+                        e.preventDefault();
+                        textarea.setRangeText('\n' + indent, start, start, 'end');
+                        renderEditor();
+                        return;
+                    }
+                }
+
+                // 3. Auto-Close Brackets & Quotes
+                if (appSettings.autoCloseBrackets && !mod) {
+                    const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+                    if (pairs[e.key]) {
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const closing = pairs[e.key];
+
+                        if (start === end) {
+                            e.preventDefault();
+                            textarea.setRangeText(e.key + closing, start, end, 'end');
+                            textarea.selectionStart = textarea.selectionEnd = start + 1;
+                            renderEditor();
+                            return;
+                        }
+                    }
+                }
+
+                // 4. Toggle Line Comment (Ctrl + /)
+                if (mod && e.key === '/') {
+                    e.preventDefault();
+                    toggleComment();
+                    return;
+                }
+
+                // 5. Duplicate Line (Ctrl + D)
+                if (mod && e.key.toLowerCase() === 'd') {
+                    e.preventDefault();
+                    duplicateLine();
+                    return;
+                }
+
+                // 6. Delete Current Line (Ctrl + Shift + K)
+                if (mod && e.shiftKey && e.key.toLowerCase() === 'k') {
+                    e.preventDefault();
+                    deleteCurrentLine();
+                    return;
+                }
+
+                // 7. Undo (Ctrl + Z) and Redo (Ctrl + Y or Ctrl + Shift + Z)
+                if (mod && e.key.toLowerCase() === 'z') {
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        redo();
+                    } else {
+                        e.preventDefault();
+                        undo();
+                    }
+                    return;
+                }
+                if (mod && e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    redo();
+                    return;
+                }
+            });
+
+            // Comment Toggle Implementation
+            function toggleComment() {
+                const commentPrefixes = {
+                    assembly: '; ', javascript: '// ', typescript: '// ', cpp: '// ',
+                    csharp: '// ', rust: '// ', go: '// ', java: '// ',
+                    python: '# ', bash: '# ', yaml: '# ',
+                    sql: '-- ', lua: '-- ', html: '<!-- '
+                };
+
+                const lang = langSelect.value;
+                const prefix = commentPrefixes[lang] || '// ';
+                const text = textarea.value;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+
+                const startLineIdx = text.lastIndexOf('\n', start - 1) + 1;
+                let endLineIdx = text.indexOf('\n', end);
+                if (endLineIdx === -1) endLineIdx = text.length;
+
+                const block = text.substring(startLineIdx, endLineIdx);
+                const lines = block.split('\n');
+
+                const allCommented = lines.every(l => l.trimStart().startsWith(prefix.trim()));
+                const newLines = lines.map(line => {
+                    if (allCommented) {
+                        return line.replace(new RegExp('^(\\s*)' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '$1');
+                    } else {
+                        return prefix + line;
+                    }
+                });
+
+                textarea.setRangeText(newLines.join('\n'), startLineIdx, endLineIdx, 'select');
+                renderEditor();
+            }
+
+            // Duplicate Line Implementation
+            function duplicateLine() {
+                const text = textarea.value;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+
+                if (start !== end) {
+                    const selected = text.substring(start, end);
+                    textarea.setRangeText(selected + selected, start, end, 'end');
+                } else {
+                    const startLineIdx = text.lastIndexOf('\n', start - 1) + 1;
+                    let endLineIdx = text.indexOf('\n', start);
+                    if (endLineIdx === -1) endLineIdx = text.length;
+                    const line = text.substring(startLineIdx, endLineIdx);
+                    textarea.setRangeText('\n' + line, endLineIdx, endLineIdx, 'end');
+                }
+                renderEditor();
+            }
+
+            // Delete Current Line Implementation
+            function deleteCurrentLine() {
+                const text = textarea.value;
+                const start = textarea.selectionStart;
+                const startLineIdx = text.lastIndexOf('\n', start - 1) + 1;
+                let endLineIdx = text.indexOf('\n', start);
+                if (endLineIdx === -1) {
+                    endLineIdx = text.length;
+                } else {
+                    endLineIdx++; // include the newline
+                }
+                textarea.setRangeText('', startLineIdx, endLineIdx, 'end');
+                renderEditor();
+            }
+
+            // Undo / Redo Functions
+            function undo() {
+                const hist = getHistory(activeTabId);
+                if (hist.undo.length <= 1) return;
+                const current = hist.undo.pop();
+                hist.redo.push(current);
+                const previous = hist.undo[hist.undo.length - 1];
+                textarea.value = previous.text;
+                textarea.selectionStart = previous.selStart;
+                textarea.selectionEnd = previous.selEnd;
+                hist.lastText = previous.text;
+                renderEditor();
+            }
+
+            function redo() {
+                const hist = getHistory(activeTabId);
+                if (hist.redo.length === 0) return;
+                const next = hist.redo.pop();
+                hist.undo.push(next);
+                textarea.value = next.text;
+                textarea.selectionStart = next.selStart;
+                textarea.selectionEnd = next.selEnd;
+                hist.lastText = next.text;
+                renderEditor();
+            }
+
+            // =========================================================================
+            // FILE I/O OPERATIONS
+            // =========================================================================
+            async function openFilePicker() {
+                if (window.showOpenFilePicker) {
+                    try {
+                        const handles = await window.showOpenFilePicker({ multiple: true });
+                        for (const handle of handles) {
+                            const file = await handle.getFile();
+                            const content = await file.text();
+                            createTab(file.name, content);
+                        }
+                        showToast(`Opened ${handles.length} file(s)`);
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+                filePicker.click();
+            }
+
+            filePicker.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        createTab(file.name, evt.target.result);
+                    };
+                    reader.readAsText(file);
+                });
+                showToast(`Opened ${files.length} file(s)`);
+                filePicker.value = '';
+            });
+
+            async function saveFile() {
+                const activeTab = tabs.find(t => t.id === activeTabId);
+                if (!activeTab) return;
+
+                const content = textarea.value;
+                const filename = activeTab.name || 'document.txt';
+
+                if (window.showSaveFilePicker) {
+                    try {
+                        const handle = await window.showSaveFilePicker({ suggestedName: filename });
+                        const writable = await handle.createWritable();
+                        await writable.write(content);
+                        await writable.close();
+                        activeTab.name = handle.name;
+                        activeTab.isDirty = false;
+                        renderTabs();
+                        showToast(`Saved ${handle.name}`);
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                // Fallback blob download
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+
+                activeTab.isDirty = false;
+                renderTabs();
+                showToast(`Downloaded ${filename}`);
+            }
+
+            // Drag and Drop File Handlers
+            window.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dragOverlay.classList.add('active');
+            });
+            window.addEventListener('dragleave', (e) => {
+                if (e.relatedTarget === null) dragOverlay.classList.remove('active');
+            });
+            window.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dragOverlay.classList.remove('active');
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) {
+                    files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            createTab(file.name, evt.target.result);
+                        };
+                        reader.readAsText(file);
+                    });
+                    showToast(`Opened ${files.length} dropped file(s)`);
+                }
+            });
+
+            // =========================================================================
+            // FIND & REPLACE CONTROLLER
+            // =========================================================================
+            function toggleFindPanel(open = null) {
+                const shouldOpen = open !== null ? open : !findPanel.classList.contains('active');
+                if (shouldOpen) {
+                    findPanel.classList.add('active');
+                    const selText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+                    if (selText && !selText.includes('\n')) {
+                        findInput.value = selText;
+                    }
+                    findInput.focus();
+                    findInput.select();
+                    updateFindMatches();
+                } else {
+                    findPanel.classList.remove('active');
+                    textarea.focus();
+                }
+            }
+
+            function updateFindMatches() {
+                const query = findInput.value;
+                if (!query) {
+                    matchBadge.textContent = '0 of 0';
+                    findState.matches = [];
+                    findState.currentIndex = -1;
+                    return;
+                }
+
+                const text = textarea.value;
+                const matches = [];
+
+                try {
+                    let flags = 'g';
+                    if (!findState.matchCase) flags += 'i';
+
+                    let patternStr = findState.useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (findState.wholeWord) patternStr = `\\b${patternStr}\\b`;
+
+                    const regex = new RegExp(patternStr, flags);
+                    let m;
+                    while ((m = regex.exec(text)) !== null) {
+                        matches.push({ start: m.index, end: m.index + m[0].length });
+                        if (m.index === regex.lastIndex) regex.lastIndex++;
+                    }
+                } catch (e) {
+                    matchBadge.textContent = 'Invalid RegEx';
+                    findState.matches = [];
+                    return;
+                }
+
+                findState.matches = matches;
+                if (matches.length > 0) {
+                    // Find closest match to current cursor
+                    const cursor = textarea.selectionStart;
+                    let bestIdx = matches.findIndex(m => m.start >= cursor);
+                    if (bestIdx === -1) bestIdx = 0;
+                    findState.currentIndex = bestIdx;
+                    matchBadge.textContent = `${bestIdx + 1} of ${matches.length}`;
+                } else {
+                    findState.currentIndex = -1;
+                    matchBadge.textContent = 'No matches';
+                }
+            }
+
+            function jumpToMatch(index) {
+                if (findState.matches.length === 0) return;
+                const idx = (index + findState.matches.length) % findState.matches.length;
+                findState.currentIndex = idx;
+                const match = findState.matches[idx];
+                textarea.focus();
+                textarea.setSelectionRange(match.start, match.end);
+                matchBadge.textContent = `${idx + 1} of ${findState.matches.length}`;
+                renderEditor();
+            }
+
+            findInput.addEventListener('input', updateFindMatches);
+
+            findInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        jumpToMatch(findState.currentIndex - 1);
+                    } else {
+                        jumpToMatch(findState.currentIndex + 1);
+                    }
+                }
+            });
+
+            document.getElementById('btnFindNext').addEventListener('click', () => jumpToMatch(findState.currentIndex + 1));
+            document.getElementById('btnFindPrev').addEventListener('click', () => jumpToMatch(findState.currentIndex - 1));
+
+            // Find Options Toggles
+            btnToggleCase.addEventListener('click', () => {
+                findState.matchCase = !findState.matchCase;
+                btnToggleCase.classList.toggle('active', findState.matchCase);
+                updateFindMatches();
+            });
+
+            btnToggleWord.addEventListener('click', () => {
+                findState.wholeWord = !findState.wholeWord;
+                btnToggleWord.classList.toggle('active', findState.wholeWord);
+                updateFindMatches();
+            });
+
+            btnToggleRegex.addEventListener('click', () => {
+                findState.useRegex = !findState.useRegex;
+                btnToggleRegex.classList.toggle('active', findState.useRegex);
+                updateFindMatches();
+            });
+
+            document.getElementById('btnReplace').addEventListener('click', () => {
+                if (findState.matches.length === 0 || findState.currentIndex === -1) return;
+                const match = findState.matches[findState.currentIndex];
+                const replacement = replaceInput.value;
+                textarea.setRangeText(replacement, match.start, match.end, 'select');
+                updateFindMatches();
+                jumpToMatch(findState.currentIndex);
+                renderEditor();
+            });
+
+            document.getElementById('btnReplaceAll').addEventListener('click', () => {
+                const query = findInput.value;
+                if (!query) return;
+                const replacement = replaceInput.value;
+                let flags = 'g';
+                if (!findState.matchCase) flags += 'i';
+                let patternStr = findState.useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                if (findState.wholeWord) patternStr = `\\b${patternStr}\\b`;
+
+                try {
+                    const regex = new RegExp(patternStr, flags);
+                    const matches = textarea.value.match(regex);
+                    const count = matches ? matches.length : 0;
+                    textarea.value = textarea.value.replace(regex, replacement);
+                    updateFindMatches();
+                    renderEditor();
+                    showToast(`Replaced ${count} occurrence(s)`);
+                } catch (e) {
+                    showToast('Replace error: invalid regular expression');
+                }
+            });
+
+            document.getElementById('btnCloseFind').addEventListener('click', () => toggleFindPanel(false));
+
+            // =========================================================================
+            // GO TO LINE MODAL
+            // =========================================================================
+            function openGotoModal() {
+                const lines = textarea.value.split('\n').length;
+                gotoPromptLabel.textContent = `Line number (1 - ${lines}):`;
+                gotoLineInput.max = lines;
+                gotoLineInput.value = textarea.value.substring(0, textarea.selectionStart).split('\n').length;
+                gotoModal.classList.add('active');
+                gotoLineInput.focus();
+                gotoLineInput.select();
+            }
+
+            function executeGoto() {
+                const targetLine = parseInt(gotoLineInput.value, 10);
+                const lines = textarea.value.split('\n');
+                if (isNaN(targetLine) || targetLine < 1 || targetLine > lines.length) {
+                    showToast(`Invalid line number (file has ${lines.length} lines)`);
+                    return;
+                }
+
+                let pos = 0;
+                for (let i = 0; i < targetLine - 1; i++) {
+                    pos += lines[i].length + 1;
+                }
+
+                gotoModal.classList.remove('active');
+                textarea.focus();
+                textarea.setSelectionRange(pos, pos);
+                renderEditor();
+            }
+
+            document.getElementById('btnExecuteGoto').addEventListener('click', executeGoto);
+            document.getElementById('btnCancelGoto').addEventListener('click', () => gotoModal.classList.remove('active'));
+            document.getElementById('btnCloseGoto').addEventListener('click', () => gotoModal.classList.remove('active'));
+            gotoLineInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') executeGoto();
+                if (e.key === 'Escape') gotoModal.classList.remove('active');
+            });
+
+            // =========================================================================
+            // SETTINGS & CUSTOMIZATION
+            // =========================================================================
+            function applySettings() {
+                const root = document.documentElement;
+
+                // Theme Preset
+                document.body.className = '';
+                if (appSettings.theme === 'light') document.body.classList.add('theme-light');
+                else if (appSettings.theme === 'high-contrast') document.body.classList.add('theme-high-contrast');
+                else if (appSettings.theme === 'monokai') document.body.classList.add('theme-monokai');
+
+                // Font Family & Sizing
                 root.style.setProperty('--font-code', appSettings.fontFamily);
                 root.style.setProperty('--font-size', appSettings.fontSize + 'px');
                 root.style.setProperty('--line-height', appSettings.lineHeight);
 
-                // Save
-                localStorage.setItem('editpad_settings', JSON.stringify(appSettings));
+                // Word Wrap
+                editorContainer.classList.toggle('word-wrap', appSettings.wordWrap);
+                textarea.setAttribute('wrap', appSettings.wordWrap ? 'on' : 'off');
+                document.getElementById('btnWordWrap').classList.toggle('active', appSettings.wordWrap);
+
+                // Spell Check
+                textarea.spellcheck = appSettings.spellcheck;
+
+                // Tab Spaces
+                statusSpaces.textContent = `Spaces: ${appSettings.tabSize}`;
+
+                // Update settings modal inputs
+                settingTheme.value = appSettings.theme;
+                settingFontFamily.value = appSettings.fontFamily;
+                settingFontSize.value = appSettings.fontSize;
+                settingLineHeight.value = appSettings.lineHeight;
+                settingTabSize.value = appSettings.tabSize;
+                settingLineNumbers.checked = appSettings.showLineNumbers;
+                settingActiveLine.checked = appSettings.highlightActiveLine;
+                settingAutoClose.checked = appSettings.autoCloseBrackets;
+                settingSpellcheck.checked = appSettings.spellcheck;
+                settingSaveLocal.checked = appSettings.saveLocal;
+
+                // Persist to localStorage
+                if (appSettings.saveLocal) {
+                    try {
+                        localStorage.setItem('editpad_v2_settings', JSON.stringify(appSettings));
+                    } catch (e) {}
+                }
+
+                renderEditor();
             }
 
-            function saveWorkspace() {
-                if (!appSettings.saveLocal) return;
-                localStorage.setItem('editpad_text', textarea.value);
-                localStorage.setItem('editpad_filename', filenameInput.value);
-                localStorage.setItem('editpad_lang', langSelect.value);
-            }
-
-            // Sync & Highlight
-            function update() {
-                const text = textarea.value;
-                const lang = langSelect.value;
-                let highlighted = SyntaxHighlighter.highlight(text, lang);
-                
-                if (text.endsWith('\n') || text === '') {
-                    highlighted += '<br>';
+            // Settings Listeners
+            settingTheme.addEventListener('change', (e) => { appSettings.theme = e.target.value; applySettings(); });
+            settingFontFamily.addEventListener('change', (e) => { appSettings.fontFamily = e.target.value; applySettings(); });
+            settingFontSize.addEventListener('input', (e) => { appSettings.fontSize = parseInt(e.target.value, 10) || 14; applySettings(); });
+            settingLineHeight.addEventListener('input', (e) => { appSettings.lineHeight = parseFloat(e.target.value) || 1.55; applySettings(); });
+            settingTabSize.addEventListener('change', (e) => { appSettings.tabSize = parseInt(e.target.value, 10) || 4; applySettings(); });
+            settingLineNumbers.addEventListener('change', (e) => { appSettings.showLineNumbers = e.target.checked; applySettings(); });
+            settingActiveLine.addEventListener('change', (e) => { appSettings.highlightActiveLine = e.target.checked; applySettings(); });
+            settingAutoClose.addEventListener('change', (e) => { appSettings.autoCloseBrackets = e.target.checked; applySettings(); });
+            settingSpellcheck.addEventListener('change', (e) => { appSettings.spellcheck = e.target.checked; applySettings(); });
+            settingSaveLocal.addEventListener('change', (e) => {
+                appSettings.saveLocal = e.target.checked;
+                if (!e.target.checked) {
+                    localStorage.removeItem('editpad_v2_settings');
+                    localStorage.removeItem('editpad_v2_tabs');
+                    localStorage.removeItem('editpad_v2_activetab');
                 }
-                pre.innerHTML = highlighted; 
-                
-                pre.scrollTop = textarea.scrollTop;
-                pre.scrollLeft = textarea.scrollLeft;
-                
-                const chars = text.length;
-                const cursorPos = textarea.selectionStart;
-                const subStr = text.substring(0, cursorPos);
-                const currLine = subStr.split('\n').length;
-                const currCol = subStr.length - subStr.lastIndexOf('\n');
-                stats.textContent = `Ln ${currLine}, Col ${currCol}`;
-                charCount.textContent = `${chars} chars`;
-
-                // Quick Local Save
-                saveWorkspace();
-            }
-
-            textarea.addEventListener('input', update);
-            textarea.addEventListener('scroll', () => { pre.scrollTop = textarea.scrollTop; pre.scrollLeft = textarea.scrollLeft; });
-            ['click', 'keyup', 'keydown'].forEach(evt => textarea.addEventListener(evt, update));
-
-            // Tab Key behavior
-            textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const val = textarea.value;
-                    textarea.value = val.substring(0, start) + "    " + val.substring(end);
-                    textarea.selectionStart = textarea.selectionEnd = start + 4;
-                    update();
-                }
+                applySettings();
             });
 
-            // Auto-detect Extension
-            const extToLangMap = { 'txt': 'plaintext', 'js': 'javascript', 'ts': 'javascript', 'py': 'python', 'html': 'html', 'css': 'css', 'json': 'json', 'md': 'markdown', 'sql': 'sql', 'sh': 'bash', 'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp', 'lua': 'lua' };
-            const langToExtMap = { 'plaintext': 'txt', 'javascript': 'js', 'html': 'html', 'css': 'css', 'python': 'py', 'json': 'json', 'markdown': 'md', 'lua': 'lua', 'cpp': 'cpp', 'bash': 'sh', 'sql': 'sql' };
-
-            function autoDetectExt() {
-                const ext = filenameInput.value.split('.').pop().toLowerCase();
-                if(extToLangMap[ext] && langSelect.value !== extToLangMap[ext]) { 
-                    langSelect.value = extToLangMap[ext]; 
-                    update(); 
-                } else {
-                    saveWorkspace();
-                }
-            }
-            
-            filenameInput.addEventListener('blur', autoDetectExt);
-            filenameInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); filenameInput.blur(); }
+            document.getElementById('btnResetSettings').addEventListener('click', () => {
+                appSettings = Object.assign({}, DEFAULT_SETTINGS);
+                applySettings();
+                showToast('Settings reset to default values');
             });
 
-            langSelect.addEventListener('change', (e) => {
-                const selectedLang = e.target.value;
-                const newExt = langToExtMap[selectedLang] || 'txt';
-                let currentName = filenameInput.value || 'untitled';
-                const lastDot = currentName.lastIndexOf('.');
-                if(lastDot !== -1) currentName = currentName.substring(0, lastDot);
-                filenameInput.value = `${currentName}.${newExt}`;
-                update();
-            });
-
-            /* --- FILE I/O --- */
-            document.getElementById('btnOpen').addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    textarea.value = evt.target.result;
-                    filenameInput.value = file.name;
-                    autoDetectExt();
-                    update();
-                };
-                reader.readAsText(file);
-                fileInput.value = '';
-            });
-
-            document.getElementById('btnSave').addEventListener('click', () => {
-                const blob = new Blob([textarea.value], {type: "text/plain;charset=utf-8"});
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = filenameInput.value || "untitled.txt";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            });
-
-            /* --- FIND & REPLACE --- */
-            document.getElementById('btnFind').addEventListener('click', () => {
-                findBar.classList.toggle('active');
-                if(findBar.classList.contains('active')) findInput.focus();
-            });
-            document.getElementById('btnCloseFind').addEventListener('click', () => findBar.classList.remove('active'));
-
-            function findText() {
-                const val = findInput.value;
-                if(!val) return;
-                const text = textarea.value;
-                const start = textarea.selectionEnd;
-                let idx = text.indexOf(val, start);
-                if(idx === -1) idx = text.indexOf(val);
-                if(idx !== -1) {
-                    textarea.focus();
-                    textarea.setSelectionRange(idx, idx + val.length);
-                    update();
-                }
-            }
-            
-            findInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') { e.preventDefault(); findText(); } });
-            document.getElementById('btnFindNext').addEventListener('click', findText);
-            document.getElementById('btnReplace').addEventListener('click', () => {
-                const findVal = findInput.value;
-                const repVal = document.getElementById('replaceInput').value;
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                if(textarea.value.substring(start, end) === findVal) {
-                    textarea.setRangeText(repVal, start, end, 'select');
-                    update();
-                }
-                findText();
-            });
-            document.getElementById('btnReplaceAll').addEventListener('click', () => {
-                const findVal = findInput.value;
-                const repVal = document.getElementById('replaceInput').value;
-                if(!findVal) return;
-                const regex = new RegExp(findVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                textarea.value = textarea.value.replace(regex, repVal);
-                update();
-            });
-
-            /* --- SETTINGS & CUSTOMIZATION LISTENER --- */
             document.getElementById('btnSettings').addEventListener('click', () => settingsModal.classList.add('active'));
             document.getElementById('btnCloseSettings').addEventListener('click', () => settingsModal.classList.remove('active'));
-            settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.classList.remove('active'); });
+            document.getElementById('btnSaveSettings').addEventListener('click', () => settingsModal.classList.remove('active'));
+            settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.remove('active'); });
 
-            // Listen to Toggles
-            Object.keys(toggles).forEach(key => {
-                toggles[key].addEventListener('change', (e) => {
-                    appSettings[key] = e.target.checked;
-                    if(key === 'saveLocal' && !e.target.checked) {
-                        localStorage.removeItem('editpad_text');
-                        localStorage.removeItem('editpad_filename');
-                        localStorage.removeItem('editpad_lang');
-                    } else if (key === 'saveLocal' && e.target.checked) {
-                        saveWorkspace();
+            // Word wrap button toggle
+            document.getElementById('btnWordWrap').addEventListener('click', () => {
+                appSettings.wordWrap = !appSettings.wordWrap;
+                applySettings();
+                showToast(`Word wrap ${appSettings.wordWrap ? 'enabled' : 'disabled'}`);
+            });
+
+            // Status bar EOL click to toggle
+            statusEol.addEventListener('click', () => {
+                const text = textarea.value;
+                if (text.includes('\r\n')) {
+                    textarea.value = text.replace(/\r\n/g, '\n');
+                    showToast('Converted line endings to LF');
+                } else {
+                    textarea.value = text.replace(/\n/g, '\r\n');
+                    showToast('Converted line endings to CRLF');
+                }
+                renderEditor();
+            });
+
+            // Language Selector
+            langSelect.addEventListener('change', (e) => {
+                const activeTab = tabs.find(t => t.id === activeTabId);
+                if (activeTab) {
+                    activeTab.lang = e.target.value;
+                    const ext = LANG_TO_EXT[e.target.value] || 'txt';
+                    const parts = activeTab.name.split('.');
+                    if (parts.length > 1) {
+                        parts[parts.length - 1] = ext;
+                        activeTab.name = parts.join('.');
+                    } else {
+                        activeTab.name = `${activeTab.name}.${ext}`;
                     }
-                    applySettingsToDOM();
-                });
-            });
-
-            // Listen to Inputs
-            inputs.theme.addEventListener('change', e => { 
-                appSettings.theme = e.target.value; 
-                appSettings.bgColor = e.target.value === 'light' ? '#ffffff' : '#18181b';
-                appSettings.textColor = e.target.value === 'light' ? '#18181b' : '#e4e4e7';
-                applySettingsToDOM(); 
-            });
-            inputs.bgColor.addEventListener('input', e => { appSettings.bgColor = e.target.value; applySettingsToDOM(); });
-            inputs.textColor.addEventListener('input', e => { appSettings.textColor = e.target.value; applySettingsToDOM(); });
-            inputs.fontFamily.addEventListener('change', e => { appSettings.fontFamily = e.target.value; applySettingsToDOM(); });
-            inputs.fontSize.addEventListener('input', e => { appSettings.fontSize = e.target.value; applySettingsToDOM(); });
-            inputs.lineHeight.addEventListener('input', e => { appSettings.lineHeight = e.target.value; applySettingsToDOM(); });
-
-            /* --- KEYBOARD SHORTCUTS --- */
-            document.addEventListener('keydown', (e) => {
-                const cmd = e.ctrlKey || e.metaKey;
-                if(cmd && e.key.toLowerCase() === 's') { e.preventDefault(); document.getElementById('btnSave').click(); }
-                if(cmd && e.key.toLowerCase() === 'o') { e.preventDefault(); document.getElementById('btnOpen').click(); }
-                if(cmd && e.key.toLowerCase() === 'f') { e.preventDefault(); document.getElementById('btnFind').click(); }
-                
-                if(e.key === 'Escape') {
-                    if(findBar.classList.contains('active')) { document.getElementById('btnCloseFind').click(); textarea.focus(); }
-                    else if(settingsModal.classList.contains('active')) { document.getElementById('btnCloseSettings').click(); textarea.focus(); }
+                    renderTabs();
+                    renderEditor();
                 }
             });
 
-            /* --- INIT BOOT SEQUENCE --- */
-            applySettingsToDOM();
-            
-            // Restore Workspace if enabled
+            // Action Buttons
+            document.getElementById('btnNew').addEventListener('click', () => createTab());
+            document.getElementById('btnNewTab').addEventListener('click', () => createTab());
+            document.getElementById('btnOpen').addEventListener('click', openFilePicker);
+            document.getElementById('btnSave').addEventListener('click', saveFile);
+            document.getElementById('btnFind').addEventListener('click', () => toggleFindPanel());
+
+            // Global Keyboard Shortcuts
+            document.addEventListener('keydown', (e) => {
+                const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                const mod = isMac ? e.metaKey : e.ctrlKey;
+
+                if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); saveFile(); return; }
+                if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); openFilePicker(); return; }
+                if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); createTab(); return; }
+                if (mod && e.key.toLowerCase() === 'w') { e.preventDefault(); if (activeTabId) closeTab(activeTabId); return; }
+                if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFindPanel(); return; }
+                if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); openGotoModal(); return; }
+                if (e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); document.getElementById('btnWordWrap').click(); return; }
+
+                if (e.key === 'Escape') {
+                    if (findPanel.classList.contains('active')) toggleFindPanel(false);
+                    if (settingsModal.classList.contains('active')) settingsModal.classList.remove('active');
+                    if (gotoModal.classList.contains('active')) gotoModal.classList.remove('active');
+                }
+            });
+
+            // Custom Tooltip Engine
+            document.querySelectorAll('[data-tooltip]').forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    tooltipEl.textContent = el.getAttribute('data-tooltip');
+                    tooltipEl.classList.add('show');
+                    const rect = el.getBoundingClientRect();
+                    let top = rect.bottom + 6;
+                    let left = rect.left + (rect.width / 2) - (tooltipEl.offsetWidth / 2);
+                    if (left < 8) left = 8;
+                    if (left + tooltipEl.offsetWidth > window.innerWidth - 8) {
+                        left = window.innerWidth - tooltipEl.offsetWidth - 8;
+                    }
+                    tooltipEl.style.top = top + 'px';
+                    tooltipEl.style.left = left + 'px';
+                });
+                el.addEventListener('mouseleave', () => tooltipEl.classList.remove('show'));
+                el.addEventListener('click', () => tooltipEl.classList.remove('show'));
+            });
+
+            // =========================================================================
+            // INITIALIZATION SEQUENCE
+            // =========================================================================
+            applySettings();
+
+            // Restore previous workspace if enabled
+            let restored = false;
             if (appSettings.saveLocal) {
-                const savedText = localStorage.getItem('editpad_text');
-                const savedName = localStorage.getItem('editpad_filename');
-                const savedLang = localStorage.getItem('editpad_lang');
-                
-                if (savedText !== null) textarea.value = savedText;
-                if (savedName) filenameInput.value = savedName;
-                if (savedLang) langSelect.value = savedLang;
+                try {
+                    const savedTabs = localStorage.getItem('editpad_v2_tabs');
+                    const savedActive = localStorage.getItem('editpad_v2_activetab');
+                    if (savedTabs) {
+                        const parsed = JSON.parse(savedTabs);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            tabs = parsed;
+                            activeTabId = savedActive && tabs.some(t => t.id === savedActive) ? savedActive : tabs[0].id;
+                            const activeTab = tabs.find(t => t.id === activeTabId);
+                            textarea.value = activeTab.content || '';
+                            langSelect.value = activeTab.lang || 'assembly';
+                            renderTabs();
+                            renderEditor();
+                            restored = true;
+                        }
+                    }
+                } catch (e) {}
             }
 
-            update(); // Init render
+            if (!restored) {
+                // Initial Default Assembly Document
+                const defaultAsm = `; ==============================================================================
+; Welcome to EditPad Pro — High Performance Code Editor
+; Accelerated with WebAssembly & Native x64 Assembly Engine
+; ==============================================================================
+
+extrn ExitProcess : proc
+extrn MessageBoxA : proc
+
+.data
+szTitle db "EditPad Pro Native", 0
+szMsg   db "Zero dependencies. Foolproof. Lightning fast.", 0
+
+.code
+main proc
+    sub rsp, 28h          ; Align 16-byte stack frame + shadow space
+    xor rcx, rcx          ; hWnd = NULL
+    lea rdx, szMsg        ; lpText
+    lea r8, szTitle       ; lpCaption
+    mov r9d, 40h          ; uType = MB_OK | MB_ICONINFORMATION
+    call MessageBoxA
+    xor ecx, ecx          ; uExitCode = 0
+    call ExitProcess
+main endp
+end
+`;
+                createTab('main.asm', defaultAsm, 'assembly');
+            }
         });
     </script>
 </body>
